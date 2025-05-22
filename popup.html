@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Summarize Slider</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Summarize Slider</h1>
+    
+    <div class="complexity-selector">
+      <div class="slider-container">
+        <div class="slider-track">
+          <div class="slider-fill"></div>
+        </div>
+        <input type="range" id="complexitySlider" min="0" max="2" value="1" step="1" class="slider">
+        <div class="slider-labels">
+          <span class="slider-label">ELI5</span>
+          <span class="slider-label">Standard</span>
+          <span class="slider-label">PhD Level</span>
+        </div>
+      </div>
+    </div>
+    
+    <button id="summarizeBtn" class="button">Summarize</button>
+    <div id="loadingIndicator" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Generating summary...</p>
+    </div>
+    <div id="summaryContainer" class="summary-container hidden">
+      <h2>Summary</h2>
+      <div id="summaryContent"></div>
+    </div>
+    <div id="errorContainer" class="error-container hidden">
+      <p id="errorMessage"></p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

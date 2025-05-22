@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div class="summarizer-panel">
+    <div class="panel-header">
+      <h1 class="panel-title">Summarize Slider</h1>
+      <button id="closePanel" class="close-button">&times;</button>
+    </div>
+    
+    <div class="panel-content">
+      <div class="complexity-section">
+        <div class="complexity-selector">
+          <div class="slider-container">
+            <div class="slider-track">
+              <div class="slider-dot left-dot"></div>
+              <div class="slider-dot middle-dot"></div>
+              <div class="slider-dot right-dot"></div>
+            </div>
+            <input type="range" id="complexitySlider" min="0" max="2" value="1" step="1" class="slider">
+            <div class="slider-thumb" id="sliderThumb"></div>
+          </div>
+          
+          <div class="slider-labels">
+            <div class="slider-label-group" data-value="0">
+              <div class="slider-label">ELI5</div>
+              <div class="slider-sublabel">Explain like I'm 5</div>
+            </div>
+            <div class="slider-label-group" data-value="1">
+              <div class="slider-label">Standard</div>
+              <div class="slider-sublabel">Just the essentials</div>
+            </div>
+            <div class="slider-label-group" data-value="2">
+              <div class="slider-label">Expert Level</div>
+              <div class="slider-sublabel">Deep-dive</div>
+            </div>
+          </div>
+        </div>
+        
+        <button id="summarizeBtn" class="button">Summarize</button>
+      </div>
+      
+      <div id="loadingIndicator" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Generating summary...</p>
+      </div>
+      
+      <div id="summaryContainer" class="summary-container hidden">
+        <div id="summaryContent"></div>
+      </div>
+      
+      <div id="errorContainer" class="error-container hidden">
+        <p id="errorMessage"></p>
+      </div>
+      
+      <div class="bottom-border"></div>
+    </div>
+  </div>
+  <script src="panel.js"></script>
+</body>
+</html>

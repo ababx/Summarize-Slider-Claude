@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Design Tester</title>
+  <style>
+    /* Reset and page styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .header {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .description {
+      color: #666;
+      margin-bottom: 20px;
+    }
+    
+    .panel-container {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .panel-wrapper {
+      width: 400px;
+      height: 600px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .controls {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      flex: 1;
+    }
+    
+    .control-group {
+      margin-bottom: 20px;
+    }
+    
+    .control-group h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    button {
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    
+    button:hover {
+      background-color: #0060df;
+    }
+    
+    textarea {
+      width: 100%;
+      height: 200px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-top: 10px;
+    }
+    
+    /* Panel Styles */
+    .summarizer-panel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #eaeaea;
+    }
+    
+    .panel-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      color: #000;
+    }
+    
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #888;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+    
+    .close-button:hover {
+      color: #555;
+    }
+    
+    .panel-content {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Complexity Section */
+    .complexity-section {
+      margin-bottom: 32px;
+    }
+    
+    /* Complexity Selector Styles */
+    .complexity-selector {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    
+    .slider-container {
+      position: relative;
+      height: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .slider-track {
+      position: absolute;
+      height: 48px;
+      width: 100%;
+      background-color: #f0f0f0;
+      border-radius: 24px;
+      top: 0;
+      left: 0;
+    }
+    
+    .slider-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: #cccccc;
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .left-dot {
+      left: 16px;
+    }
+    
+    .right-dot {
+      right: 16px;
+    }
+    
+    .slider {
+      -webkit-appearance: none;
+      width: calc(100% - 16px);
+      height: 48px;
+      background: transparent;
+      outline: none;
+      margin: 0 8px;
+      position: relative;
+      z-index: 2;
+      cursor: pointer;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      opacity: 0; /* Hide the default thumb */
+    }
+    
+    .slider-thumb {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      background-color: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      top: 6px;
+      /* Position will be set by JavaScript */
+      z-index: 3;
+      transition: left 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    
+    .slider-label-group {
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
+    }
+    
+    .slider-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 4px;
+    }
+    
+    .slider-sublabel {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    /* Button Styles */
+    .button {
+      background-color: #000;
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 32px;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      width: 100%;
+      margin-top: auto;
+    }
+    
+    .button:hover {
+      background-color: #333;
+    }
+    
+    .button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 24px 0;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #000;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .summary-container {
+      margin-top: 24px;
+      border-top: 1px solid #eaeaea;
+      padding-top: 16px;
+    }
+    
+    .summary-container h2 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #000;
+    }
+    
+    #summaryContent {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+    }
+    
+    #summaryContent h1,
+    #summaryContent h2,
+    #summaryContent h3 {
+      margin-top: 16px;
+      margin-bottom: 8px;
+      color: #000;
+    }
+    
+    #summaryContent p {
+      margin-bottom: 12px;
+    }
+    
+    #summaryContent ul,
+    #summaryContent ol {
+      margin-bottom: 12px;
+      padding-left: 24px;
+    }
+    
+    .error-container {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #fee2e2;
+      border-radius: 8px;
+      color: #b91c1c;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .bottom-border {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background-color: #3b82f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Panel Design Tester</h1>
+      <p class="description">Test and tweak the panel design without installing the Chrome extension.</p>
+    </div>
+    
+    <div class="panel-container">
+      <div class="panel-wrapper">
+        <div class="summarizer-panel">
+          <div class="panel-header">
+            <h1 class="panel-title">Web Summarizer</h1>
+            <button id="closePanel" class="close-button">&times;</button>
+          </div>
+          
+          <div class="panel-content">
+            <div class="complexity-section">
+              <div class="complexity-selector">
+                <div class="slider-container">
+                  <div class="slider-track">
+                    <div class="slider-dot left-dot"></div>
+                    <div class="slider-dot right-dot"></div>
+                  </div>
+                  <input type="range" id="complexitySlider" min="0" max="2" value="1" step="1" class="slider">
+                  <div class="slider-thumb" id="sliderThumb"></div>
+                </div>
+                
+                <div class="slider-labels">
+                  <div class="slider-label-group" data-value="0">
+                    <div class="slider-label">ELI5</div>
+                    <div class="slider-sublabel">Explain like I'm 5</div>
+                  </div>
+                  <div class="slider-label-group" data-value="1">
+                    <div class="slider-label">Standard</div>
+                    <div class="slider-sublabel">Just the essentials</div>
+                  </div>
+                  <div class="slider-label-group" data-value="2">
+                    <div class="slider-label">Expert Level</div>
+                    <div class="slider-sublabel">Deep-dive</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button id="summarizeBtn" class="button">Summarize</button>
+            
+            <div id="loadingIndicator" class="loading hidden">
+              <div class="spinner"></div>
+              <p>Generating summary...</p>
+            </div>
+            
+            <div id="summaryContainer" class="summary-container hidden">
+              <h2>Summary</h2>
+              <div id="summaryContent"></div>
+            </div>
+            
+            <div id="errorContainer" class="error-container hidden">
+              <p id="errorMessage"></p>
+            </div>
+            
+            <div class="bottom-border"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <div class="control-group">
+          <h3>Test Panel Interactions</h3>
+          <button id="showSummaryBtn">Show Summary</button>
+          <button id="showLoadingBtn">Show Loading</button>
+          <button id="showErrorBtn">Show Error</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="control-group">
+          <h3>Sample Summary Content</h3>
+          <textarea id="summaryInput">## Key Points
+
+* The article discusses the importance of machine learning in modern applications
+* Three main approaches are highlighted: supervised, unsupervised, and reinforcement learning
+* Recent advances in transformer models have revolutionized natural language processing
+
+Machine learning continues to evolve rapidly, with new techniques being developed to address increasingly complex problems.</textarea>
+          <button id="applySummaryBtn">Apply Summary</button>
+        </div>
+        
+        <div class="control-group">
+          <h3>CSS Editor</h3>
+          <textarea id="cssEditor">/* Add custom CSS here to test changes */
+/* For example: */
+/* 
+.slider-track {
+  background-color: #e0e0e0;
+}
+
+.button {
+  background-color: #4f46e5;
+}
+*/</textarea>
+          <button id="applyCssBtn">Apply CSS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const summarizeBtn = document.getElementById("summarizeBtn");
+      const loadingIndicator = document.getElementById("loadingIndicator");
+      const summaryContainer = document.getElementById("summaryContainer");
+      const summaryContent = document.getElementById("summaryContent");
+      const errorContainer = document.getElementById("errorContainer");
+      const errorMessage = document.getElementById("errorMessage");
+      const complexitySlider = document.getElementById("complexitySlider");
+      const sliderLabelGroups = document.querySelectorAll(".slider-label-group");
+      const closeButton = document.getElementById("closePanel");
+      const sliderThumb = document.getElementById("sliderThumb");
+      
+      // Control buttons
+      const showSummaryBtn = document.getElementById("showSummaryBtn");
+      const showLoadingBtn = document.getElementById("showLoadingBtn");
+      const showErrorBtn = document.getElementById("showErrorBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const applySummaryBtn = document.getElementById("applySummaryBtn");
+      const summaryInput = document.getElementById("summaryInput");
+      const applyCssBtn = document.getElementById("applyCssBtn");
+      const cssEditor = document.getElementById("cssEditor");
+      
+      // Function to update slider thumb position
+      function updateSliderThumbPosition(value) {
+        // Get the slider container width
+        const sliderContainer = document.querySelector(".slider-container")
+        const containerWidth = sliderContainer.offsetWidth
+        
+        // Define constants
+        const thumbWidth = 36
+        const leftPadding = 8
+        const rightPadding = 8
+        
+        // Calculate the available width for the thumb to move
+        const availableWidth = containerWidth - leftPadding - rightPadding - thumbWidth
+        
+        // Calculate position based on value (0, 1, or 2)
+        let leftPosition
+        
+        if (value == 0) {
+          // Leftmost position (with leftPadding)
+          leftPosition = leftPadding
+        } else if (value == 1) {
+          // Middle position
+          leftPosition = leftPadding + (availableWidth / 2)
+        } else {
+          // Rightmost position (containerWidth - rightPadding - thumbWidth)
+          leftPosition = containerWidth - rightPadding - thumbWidth
+        }
+        
+        // Apply the position
+        sliderThumb.style.left = `${leftPosition}px`
+      }
+      
+      // Function to render Markdown
+      function renderMarkdown(text) {
+        // Basic Markdown parsing
+        let html = text
+          // Headers
+          .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+          .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+          .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+          // Bold
+          .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>")
+          // Italic
+          .replace(/\*(.*?)\*/gim, "<em>$1</em>")
+          // Lists
+          .replace(/^\* (.*$)/gim, "<ul><li>$1</li></ul>")
+          .replace(/^- (.*$)/gim, "<ul><li>$1</li></ul>")
+          // Fix consecutive list items
+          .replace(/<\/ul>\s*<ul>/gim, "")
+          // Paragraphs
+          .replace(/\n\s*\n/gim, "</p><p>");
+    
+        // Wrap in paragraph if not already
+        if (!html.startsWith("<h") && !html.startsWith("<p>")) {
+          html = "<p>" + html + "</p>";
+        }
+    
+        // Set the HTML content
+        summaryContent.innerHTML = html;
+      }
+      
+      // Make labels clickable
+      sliderLabelGroups.forEach((group) => {
+        group.addEventListener("click", () => {
+          const value = Number.parseInt(group.getAttribute("data-value"));
+          complexitySlider.value = value;
+          updateSliderThumbPosition(value);
+        });
+      });
+      
+      // Update thumb position when slider value changes
+      complexitySlider.addEventListener("input", () => {
+        updateSliderThumbPosition(complexitySlider.value);
+      });
+      
+      // Simulate summarize button click
+      summarizeBtn.addEventListener("click", () => {
+        // Reset UI
+        summaryContainer.classList.add("hidden");
+        errorContainer.classList.add("hidden");
+    
+        // Show loading indicator
+        loadingIndicator.classList.remove("hidden");
+        summarizeBtn.disabled = true;
+        
+        // Simulate API call delay
+        setTimeout(() => {
+          loadingIndicator.classList.add("hidden");
+          renderMarkdown(summaryInput.value);
+          summaryContainer.classList.remove("hidden");
+          summarizeBtn.disabled = false;
+        }, 1500);
+      });
+      
+      // Control buttons functionality
+      showSummaryBtn.addEventListener("click", () => {
+        loadingIndicator.classList.add("hidden");
+        errorContainer.classList.add("hidden");
+        renderMarkdown(summaryInput.value);
+        summaryContainer.classList.remove("hidden");
+      });
+      
+      showLoadingBtn.addEventListener("click", () => {
+        summaryContainer.classList.add("hidden");
+        errorContainer.classList.add("hidden");
+        loadingIndicator.classList.remove("hidden");
+      });
+      
+      showErrorBtn.addEventListener("click", () => {
+        summaryContainer.classList.add("hidden");
+        loadingIndicator.classList.add("hidden");
+        errorMessage.textContent = "An error occurred while generating the summary. Please try again.";
+        errorContainer.classList.remove("hidden");
+      });
+      
+      resetBtn.addEventListener("click", () => {
+        summaryContainer.classList.add("hidden");
+        loadingIndicator.classList.add("hidden");
+        errorContainer.classList.add("hidden");
+        complexitySlider.value = 1;
+        updateSliderThumbPosition(1);
+      });
+      
+      applySummaryBtn.addEventListener("click", () => {
+        renderMarkdown(summaryInput.value);
+        if (!summaryContainer.classList.contains("hidden")) {
+          summaryContainer.classList.remove("hidden");
+        }
+      });
+      
+      // Apply custom CSS
+      applyCssBtn.addEventListener("click", () => {
+        let styleElement = document.getElementById("custom-styles");
+        if (!styleElement) {
+          styleElement = document.createElement("style");
+          styleElement.id = "custom-styles";
+          document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = cssEditor.value;
+      });
+      
+      // Initialize the slider thumb position
+      updateSliderThumbPosition(complexitySlider.value);
+      
+      // Handle window resize to update thumb position
+      window.addEventListener("resize", () => {
+        updateSliderThumbPosition(complexitySlider.value);
+      });
+    });
+  </script>
+</body>
+</html>
