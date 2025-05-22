@@ -95,6 +95,12 @@ export async function POST(req: NextRequest) {
       }
       const aiProvider = perplexity({ apiKey: apiKey })
       configuredModel = aiProvider(selectedModel.model)
+    } else {
+      return NextResponse.json({ error: `Unsupported model configuration: ${model}` }, { status: 400 })
+    }
+
+    if (!configuredModel) {
+      return NextResponse.json({ error: `Failed to configure model: ${model}` }, { status: 400 })
     }
 
     // Create a prompt based on the complexity level

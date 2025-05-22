@@ -88,6 +88,87 @@ document.addEventListener("DOMContentLoaded", () => {
   // Get the current tab ID
   let currentTabId = null
 
+  // Function to check which models have API keys and reorder dropdown
+  async function updateModelDropdownOrder() {
+    const modelsWithKeys = []
+    const modelsWithoutKeys = []
+
+    // Check each model for stored API keys
+    for (const [modelId, config] of Object.entries(modelConfig)) {
+      if (modelId === "default") {
+        modelsWithoutKeys.push({ id: modelId, config })
+        continue
+      }
+
+      if (config.requiresApiKey) {
+        const hasKey = await new Promise((resolve) => {
+          chrome.storage.local.get([config.keyName], (result) => {
+            resolve(result[config.keyName] && result[config.keyName].trim())
+          })
+        })
+
+        if (hasKey) {
+          modelsWithKeys.push({ id: modelId, config })
+        } else {
+          modelsWithoutKeys.push({ id: modelId, config })
+        }
+      } else {
+        modelsWithoutKeys.push({ id: modelId, config })
+      }
+    }
+
+    // Clear existing options except the first one (default)
+    const defaultOption = modelSelector.querySelector('option[value="default"]')
+    modelSelector.innerHTML = ''
+    modelSelector.appendChild(defaultOption)
+
+    // Add models with API keys first
+    modelsWithKeys.forEach(({ id }) => {
+      const option = document.createElement('option')
+      option.value = id
+      option.textContent = getModelDisplayName(id) + ' ✓'
+      modelSelector.appendChild(option)
+    })
+
+    // Add models without API keys
+    modelsWithoutKeys.forEach(({ id }) => {
+      if (id !== "default") { // Skip default as it's already added
+        const option = document.createElement('option')
+        option.value = id
+        option.textContent = getModelDisplayName(id)
+        modelSelector.appendChild(option)
+      }
+    })
+
+    // Set default to first model with API key, or "default" if none
+    if (modelsWithKeys.length > 0) {
+      modelSelector.value = modelsWithKeys[0].id
+      // Save this as the default for the current tab
+      if (currentTabId) {
+        chrome.storage.local.set({ [`model_${currentTabId}`]: modelsWithKeys[0].id })
+      }
+    } else {
+      modelSelector.value = "default"
+    }
+  }
+
+  // Function to get display name for models
+  function getModelDisplayName(modelId) {
+    const displayNames = {
+      "default": "Default (Perplexity - No API Key)",
+      "perplexity-sonar": "Perplexity Sonar (API Key)",
+      "openai-gpt-4o": "OpenAI GPT-4o",
+      "openai-gpt-4o-mini": "OpenAI GPT-4o Mini",
+      "openai-gpt-3.5-turbo": "OpenAI GPT-3.5 Turbo",
+      "google-gemini-pro": "Google Gemini Pro",
+      "google-gemini-flash": "Google Gemini Flash",
+      "anthropic-claude-3.5-sonnet": "Anthropic Claude 3.5 Sonnet",
+      "anthropic-claude-3-haiku": "Anthropic Claude 3 Haiku",
+      "x-grok-beta": "X Grok Beta"
+    }
+    return displayNames[modelId] || modelId
+  }
+
   // Check if chrome is defined, if not, define it as an empty object with required methods
   if (typeof chrome === "undefined") {
     window.chrome = {
@@ -111,9 +192,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  chrome.runtime.sendMessage({ action: "getCurrentTabId" }, (response) => {
+  chrome.runtime.sendMessage({ action: "getCurrentTabId" }, async (response) => {
     if (response && response.tabId) {
       currentTabId = response.tabId
+
+      // Update model dropdown order based on available API keys
+      await updateModelDropdownOrder()
 
       // Load saved summary for this specific tab
       chrome.storage.local.get([`summary_${currentTabId}`, `complexity_${currentTabId}`, `model_${currentTabId}`], (result) => {
@@ -131,12 +215,11 @@ document.addEventListener("DOMContentLoaded", () => {
           updateSliderThumbPosition(1)
         }
 
+        // Override the dropdown selection if user had a specific preference
         if (result[`model_${currentTabId}`]) {
           modelSelector.value = result[`model_${currentTabId}`]
-        } else {
-          // Default to the default option (no API key needed)
-          modelSelector.value = "default"
         }
+        // Note: updateModelDropdownOrder() already set the best default
       })
     }
   })
@@ -232,6 +315,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // If user cancels API key prompt, revert to default
         modelSelector.value = "default"
         return
+      } else {
+        // API key was added successfully, refresh dropdown order
+        await updateModelDropdownOrder()
+        // Ensure the newly configured model is selected
+        modelSelector.value = selectedModel
       }
     }
     
