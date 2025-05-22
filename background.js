@@ -1,6 +1,6 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getSummary") {
-    summarizeContent(request.content, request.url, request.complexity)
+    summarizeContent(request.content, request.url, request.complexity, request.model, request.apiKey)
       .then((summary) => {
         sendResponse({ summary, tabId: request.tabId })
       })
@@ -32,24 +32,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 })
 
-async function summarizeContent(content, url, complexity = "standard") {
+async function summarizeContent(content, url, complexity = "standard", model = "default", apiKey = null) {
   try {
     console.log("Sending request to API endpoint...")
     console.log("Complexity level:", complexity)
+    console.log("Model:", model)
 
-    const apiUrl = "https://v0-chromium-summarizer-extension.vercel.app/api/summarize"
+    const apiUrl = "https://summarize-slider-claude-6oj0sqeqi-monospacers-projects.vercel.app/api/summarize"
     console.log("API URL:", apiUrl)
+
+    const requestBody = {
+      text: content,
+      url: url,
+      complexity: complexity
+    }
+
+    // Only include model if it's not default (to maintain original API compatibility)
+    if (model && model !== "default") {
+      requestBody.model = model
+    }
+
+    // Only include API key if it's provided
+    if (apiKey) {
+      requestBody.apiKey = apiKey
+    }
 
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        text: content,
-        url: url,
-        complexity: complexity,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     console.log("Response status:", response.status)
