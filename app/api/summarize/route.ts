@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
     }
 
-    // If no model specified or model is "default", use original working code
-    if (!model || model === "default") {
+    // If no model specified (original behavior), use exact original working code
+    if (!model) {
       // EXACT ORIGINAL WORKING CODE - DO NOT MODIFY
       // Create a prompt based on the complexity level
       let prompt = ""

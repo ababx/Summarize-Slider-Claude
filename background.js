@@ -44,8 +44,12 @@ async function summarizeContent(content, url, complexity = "standard", model = "
     const requestBody = {
       text: content,
       url: url,
-      complexity: complexity,
-      model: model
+      complexity: complexity
+    }
+
+    // Only include model if it's not default (to maintain original API compatibility)
+    if (model && model !== "default") {
+      requestBody.model = model
     }
 
     // Only include API key if it's provided
