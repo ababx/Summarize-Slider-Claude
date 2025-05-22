@@ -13,18 +13,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
     }
 
-    // Handle default case (original behavior)
+    // Handle default case (original behavior) - use exact same logic as original working code
     if (model === "default") {
-      // Use original Perplexity setup without API key
-      const result = await generateText({
-        model: perplexity("sonar-pro"),
-        prompt: complexity === "eli5" 
-          ? `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
-          : complexity === "phd"
-          ? `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis:\n\n${text}`
-          : `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability:\n\n${text}`,
-        maxTokens: 1000,
-      })
+      console.log("Using default Perplexity model")
+      
+      // Create a prompt based on the complexity level (same as original)
+      let prompt = ""
+      switch (complexity) {
+        case "eli5":
+          prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
+          break
+        case "phd":
+          prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis:\n\n${text}`
+          break
+        case "standard":
+        default:
+          prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability:\n\n${text}`
+          break
+      }
+
+      // Try both sonar models to see which one works
+      let result
+      try {
+        console.log("Trying sonar-pro model...")
+        result = await generateText({
+          model: perplexity("sonar-pro"),
+          prompt,
+          maxTokens: 1000,
+        })
+      } catch (sonarProError) {
+        console.log("sonar-pro failed, trying sonar model...", sonarProError.message)
+        try {
+          result = await generateText({
+            model: perplexity("sonar"),
+            prompt,
+            maxTokens: 1000,
+          })
+        } catch (sonarError) {
+          console.log("Both sonar models failed", sonarError.message)
+          throw new Error(`Perplexity models failed: sonar-pro: ${sonarProError.message}, sonar: ${sonarError.message}`)
+        }
+      }
+
+      // Return the summary
       return NextResponse.json({ summary: result.text })
     }
 
@@ -109,6 +140,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ summary: result.text })
   } catch (error) {
     console.error("Error in summarize API route:", error)
-    return NextResponse.json({ error: "Failed to generate summary" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate summary"
+    return NextResponse.json({ error: `API Error: ${errorMessage}` }, { status: 500 })
   }
 }
