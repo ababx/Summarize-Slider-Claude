@@ -9,9 +9,79 @@ document.addEventListener("DOMContentLoaded", () => {
   const sliderLabelGroups = document.querySelectorAll(".slider-label-group")
   const closeButton = document.getElementById("closePanel")
   const sliderThumb = document.getElementById("sliderThumb")
+  const modelSelector = document.getElementById("modelSelector")
 
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
+
+  // Model configuration
+  const modelConfig = {
+    "perplexity-sonar": { provider: "perplexity", requiresApiKey: false },
+    "openai-gpt-4o": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
+    "openai-gpt-4o-mini": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
+    "openai-gpt-3.5-turbo": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
+    "google-gemini-pro": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
+    "google-gemini-flash": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
+    "anthropic-claude-3.5-sonnet": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
+    "anthropic-claude-3-haiku": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
+    "x-grok-beta": { provider: "x", requiresApiKey: true, keyName: "X_API_KEY" }
+  }
+
+  // Function to prompt for API key
+  function promptForApiKey(provider, keyName) {
+    const providerNames = {
+      openai: "OpenAI",
+      google: "Google",
+      anthropic: "Anthropic",
+      x: "X (formerly Twitter)"
+    }
+    
+    const providerName = providerNames[provider] || provider
+    const apiKey = prompt(`Please enter your ${providerName} API key to use this model:`)
+    
+    if (apiKey && apiKey.trim()) {
+      // Store the API key
+      chrome.storage.local.set({ [keyName]: apiKey.trim() })
+      return apiKey.trim()
+    }
+    
+    return null
+  }
+
+  // Function to check if API key exists for a model
+  async function checkApiKey(model) {
+    const config = modelConfig[model]
+    if (!config.requiresApiKey) {
+      return true
+    }
+
+    return new Promise((resolve) => {
+      chrome.storage.local.get([config.keyName], (result) => {
+        const hasKey = result[config.keyName] && result[config.keyName].trim()
+        resolve(hasKey)
+      })
+    })
+  }
+
+  // Function to get API key for a model
+  async function getApiKey(model) {
+    const config = modelConfig[model]
+    if (!config.requiresApiKey) {
+      return null
+    }
+
+    return new Promise((resolve) => {
+      chrome.storage.local.get([config.keyName], (result) => {
+        const apiKey = result[config.keyName]
+        if (apiKey && apiKey.trim()) {
+          resolve(apiKey.trim())
+        } else {
+          const newKey = promptForApiKey(config.provider, config.keyName)
+          resolve(newKey)
+        }
+      })
+    })
+  }
 
   // Get the current tab ID
   let currentTabId = null
@@ -44,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentTabId = response.tabId
 
       // Load saved summary for this specific tab
-      chrome.storage.local.get([`summary_${currentTabId}`, `complexity_${currentTabId}`], (result) => {
+      chrome.storage.local.get([`summary_${currentTabId}`, `complexity_${currentTabId}`, `model_${currentTabId}`], (result) => {
         if (result[`summary_${currentTabId}`]) {
           // Render the summary as Markdown
           renderMarkdown(result[`summary_${currentTabId}`])
@@ -57,6 +127,13 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           // Default to Standard (1)
           updateSliderThumbPosition(1)
+        }
+
+        if (result[`model_${currentTabId}`]) {
+          modelSelector.value = result[`model_${currentTabId}`]
+        } else {
+          // Default to Perplexity Sonar
+          modelSelector.value = "perplexity-sonar"
         }
       })
     }
@@ -142,6 +219,16 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSliderThumbPosition(complexitySlider.value)
   })
 
+  // Model selection handler
+  modelSelector.addEventListener("change", () => {
+    const selectedModel = modelSelector.value
+    
+    // Save model preference for this tab
+    if (currentTabId) {
+      chrome.storage.local.set({ [`model_${currentTabId}`]: selectedModel })
+    }
+  })
+
   // Close panel
   closeButton.addEventListener("click", () => {
     window.parent.postMessage({ action: "closePanel" }, "*")
@@ -151,6 +238,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Reset UI
     summaryContainer.classList.add("hidden")
     errorContainer.classList.add("hidden")
+
+    // Get selected model and check for API key
+    const selectedModel = modelSelector.value
+    const apiKey = await getApiKey(selectedModel)
+    
+    if (modelConfig[selectedModel].requiresApiKey && !apiKey) {
+      errorMessage.textContent = "API key is required for this model"
+      errorContainer.classList.remove("hidden")
+      return
+    }
 
     // Show loading indicator
     loadingIndicator.classList.remove("hidden")
@@ -164,6 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
       {
         action: "extractContent",
         complexity: complexityLevel,
+        model: selectedModel,
+        apiKey: apiKey
       },
       "*",
     )

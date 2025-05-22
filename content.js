@@ -124,6 +124,8 @@ if (!document.getElementById("summarizer-panel-container")) {
             content: content,
             url: window.location.href,
             complexity: event.data.complexity,
+            model: event.data.model,
+            apiKey: event.data.apiKey,
             tabId: currentTabId, // Pass the tab ID
           },
           (response) => {

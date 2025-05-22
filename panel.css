@@ -35,6 +35,7 @@
   align-items: center;
   padding: 12px 20px;
   border-bottom: 1px solid #eaeaea;
+  gap: 12px;
 }
 
 .panel-title {
@@ -60,6 +61,35 @@
 
 .close-button:hover {
   color: #555;
+}
+
+.model-selector-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.model-selector {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #495057;
+  cursor: pointer;
+  outline: none;
+  min-width: 180px;
+  max-width: 200px;
+}
+
+.model-selector:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.model-selector:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 .panel-content {
