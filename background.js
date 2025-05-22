@@ -38,7 +38,7 @@ async function summarizeContent(content, url, complexity = "standard", model = "
     console.log("Complexity level:", complexity)
     console.log("Model:", model)
 
-    const apiUrl = "https://summarize-slider-claude-6oj0sqeqi-monospacers-projects.vercel.app/api/summarize"
+    const apiUrl = "https://summarize-slider-claude.vercel.app/api/summarize"
     console.log("API URL:", apiUrl)
 
     const requestBody = {
