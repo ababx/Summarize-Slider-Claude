@@ -8,6 +8,15 @@ import { generateText } from "ai"
 export async function POST(req: NextRequest) {
   try {
     const { text, url, complexity = "standard", model, apiKey } = await req.json()
+    
+    console.log("API Request received:", { 
+      hasText: !!text, 
+      textLength: text?.length, 
+      url, 
+      complexity, 
+      model, 
+      hasApiKey: !!apiKey 
+    })
 
     if (!text) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
@@ -56,6 +65,8 @@ export async function POST(req: NextRequest) {
       "x-grok-beta": { provider: openai, model: "grok-beta", requiresApiKey: true } // X models use OpenAI-compatible API
     }
 
+    console.log("Model mapping lookup for:", model, "->", modelMapping[model])
+
     const selectedModel = modelMapping[model]
     if (!selectedModel) {
       return NextResponse.json({ error: "Invalid model selected" }, { status: 400 })
@@ -63,44 +74,57 @@ export async function POST(req: NextRequest) {
 
     // Configure provider with API key
     let configuredModel
-    if (model.startsWith("openai-") || model === "x-grok-beta") {
-      if (!apiKey) {
-        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
-      }
-      if (model === "x-grok-beta") {
-        const aiProvider = openai({
-          apiKey: apiKey,
-          baseURL: "https://api.x.ai/v1"
-        })
+    try {
+      if (model.startsWith("openai-") || model === "x-grok-beta") {
+        console.log("Configuring OpenAI model:", selectedModel.model)
+        if (!apiKey) {
+          return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
+        }
+        if (model === "x-grok-beta") {
+          const aiProvider = openai({
+            apiKey: apiKey,
+            baseURL: "https://api.x.ai/v1"
+          })
+          configuredModel = aiProvider(selectedModel.model)
+        } else {
+          const aiProvider = openai({ apiKey: apiKey })
+          configuredModel = aiProvider(selectedModel.model)
+        }
+        console.log("OpenAI model configured successfully")
+      } else if (model.startsWith("google-")) {
+        console.log("Configuring Google model:", selectedModel.model)
+        if (!apiKey) {
+          return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
+        }
+        const aiProvider = google({ apiKey: apiKey })
         configuredModel = aiProvider(selectedModel.model)
+        console.log("Google model configured successfully")
+      } else if (model.startsWith("anthropic-")) {
+        console.log("Configuring Anthropic model:", selectedModel.model)
+        if (!apiKey) {
+          return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
+        }
+        const aiProvider = anthropic({ apiKey: apiKey })
+        configuredModel = aiProvider(selectedModel.model)
+        console.log("Anthropic model configured successfully")
+      } else if (model === "perplexity-sonar") {
+        console.log("Configuring Perplexity model:", selectedModel.model)
+        if (!apiKey) {
+          return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
+        }
+        const aiProvider = perplexity({ apiKey: apiKey })
+        configuredModel = aiProvider(selectedModel.model)
+        console.log("Perplexity model configured successfully")
       } else {
-        const aiProvider = openai({ apiKey: apiKey })
-        configuredModel = aiProvider(selectedModel.model)
+        return NextResponse.json({ error: `Unsupported model configuration: ${model}` }, { status: 400 })
       }
-    } else if (model.startsWith("google-")) {
-      if (!apiKey) {
-        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
-      }
-      const aiProvider = google({ apiKey: apiKey })
-      configuredModel = aiProvider(selectedModel.model)
-    } else if (model.startsWith("anthropic-")) {
-      if (!apiKey) {
-        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
-      }
-      const aiProvider = anthropic({ apiKey: apiKey })
-      configuredModel = aiProvider(selectedModel.model)
-    } else if (model === "perplexity-sonar") {
-      if (!apiKey) {
-        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
-      }
-      const aiProvider = perplexity({ apiKey: apiKey })
-      configuredModel = aiProvider(selectedModel.model)
-    } else {
-      return NextResponse.json({ error: `Unsupported model configuration: ${model}` }, { status: 400 })
-    }
 
-    if (!configuredModel) {
-      return NextResponse.json({ error: `Failed to configure model: ${model}` }, { status: 400 })
+      if (!configuredModel) {
+        return NextResponse.json({ error: `Failed to configure model: ${model}` }, { status: 400 })
+      }
+    } catch (providerError) {
+      console.error("Provider configuration error:", providerError)
+      return NextResponse.json({ error: `Provider configuration failed for ${model}: ${providerError.message}` }, { status: 400 })
     }
 
     // Create a prompt based on the complexity level
@@ -120,14 +144,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Use the selected AI model to generate a summary
-    const result = await generateText({
-      model: configuredModel,
-      prompt,
-      maxTokens: 1000,
-    })
-
-    // Return the summary
-    return NextResponse.json({ summary: result.text })
+    console.log("Calling generateText with model:", model, "prompt length:", prompt.length)
+    try {
+      const result = await generateText({
+        model: configuredModel,
+        prompt,
+        maxTokens: 1000,
+      })
+      console.log("Generated text successfully, length:", result.text?.length)
+      
+      // Return the summary
+      return NextResponse.json({ summary: result.text })
+    } catch (generateError) {
+      console.error("Generate text error:", generateError)
+      return NextResponse.json({ error: `Text generation failed for ${model}: ${generateError.message}` }, { status: 500 })
+    }
   } catch (error) {
     console.error("Error in summarize API route:", error)
     return NextResponse.json({ error: "Failed to generate summary" }, { status: 500 })
