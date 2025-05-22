@@ -157,6 +157,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ summary: result.text })
     } catch (generateError) {
       console.error("Generate text error:", generateError)
+      
+      // Check if it's an authentication error
+      if (generateError.message?.includes('401') || generateError.message?.toLowerCase().includes('unauthorized') || generateError.message?.toLowerCase().includes('invalid api key')) {
+        return NextResponse.json({ error: `Invalid API key for ${model}. Please check your API key is correct and has the required permissions.` }, { status: 401 })
+      }
+      
       return NextResponse.json({ error: `Text generation failed for ${model}: ${generateError.message}` }, { status: 500 })
     }
   } catch (error) {
