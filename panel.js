@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Model configuration
   const modelConfig = {
-    "perplexity-sonar": { provider: "perplexity", requiresApiKey: false },
+    "default": { provider: "perplexity", requiresApiKey: false },
+    "perplexity-sonar": { provider: "perplexity", requiresApiKey: true, keyName: "PERPLEXITY_API_KEY" },
     "openai-gpt-4o": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
     "openai-gpt-4o-mini": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
     "openai-gpt-3.5-turbo": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
@@ -33,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
       openai: "OpenAI",
       google: "Google",
       anthropic: "Anthropic",
-      x: "X (formerly Twitter)"
+      x: "X (formerly Twitter)",
+      perplexity: "Perplexity"
     }
     
     const providerName = providerNames[provider] || provider
@@ -132,8 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result[`model_${currentTabId}`]) {
           modelSelector.value = result[`model_${currentTabId}`]
         } else {
-          // Default to Perplexity Sonar
-          modelSelector.value = "perplexity-sonar"
+          // Default to the default option (no API key needed)
+          modelSelector.value = "default"
         }
       })
     }

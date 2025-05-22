@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 })
 
-async function summarizeContent(content, url, complexity = "standard", model = "perplexity-sonar", apiKey = null) {
+async function summarizeContent(content, url, complexity = "standard", model = "default", apiKey = null) {
   try {
     console.log("Sending request to API endpoint...")
     console.log("Complexity level:", complexity)
