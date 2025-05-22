@@ -222,8 +222,18 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 
   // Model selection handler
-  modelSelector.addEventListener("change", () => {
+  modelSelector.addEventListener("change", async () => {
     const selectedModel = modelSelector.value
+    
+    // Check if API key is needed and prompt immediately
+    if (modelConfig[selectedModel].requiresApiKey) {
+      const apiKey = await getApiKey(selectedModel)
+      if (!apiKey) {
+        // If user cancels API key prompt, revert to default
+        modelSelector.value = "default"
+        return
+      }
+    }
     
     // Save model preference for this tab
     if (currentTabId) {
@@ -241,15 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
     summaryContainer.classList.add("hidden")
     errorContainer.classList.add("hidden")
 
-    // Get selected model and check for API key
+    // Get selected model and API key (should already be available since checked on selection)
     const selectedModel = modelSelector.value
-    const apiKey = await getApiKey(selectedModel)
-    
-    if (modelConfig[selectedModel].requiresApiKey && !apiKey) {
-      errorMessage.textContent = "API key is required for this model"
-      errorContainer.classList.remove("hidden")
-      return
-    }
+    const apiKey = modelConfig[selectedModel].requiresApiKey ? await getApiKey(selectedModel) : null
 
     // Show loading indicator
     loadingIndicator.classList.remove("hidden")

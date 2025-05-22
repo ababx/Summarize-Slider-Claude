@@ -7,18 +7,18 @@ import { generateText } from "ai"
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model = "default", apiKey } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey } = await req.json()
 
     if (!text) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
     }
 
-    // Handle default case (original behavior) - use exact same logic as original working code
-    if (model === "default") {
-      console.log("Using default Perplexity model")
-      
-      // Create a prompt based on the complexity level (same as original)
+    // If no model specified or model is "default", use original working code
+    if (!model || model === "default") {
+      // EXACT ORIGINAL WORKING CODE - DO NOT MODIFY
+      // Create a prompt based on the complexity level
       let prompt = ""
+
       switch (complexity) {
         case "eli5":
           prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
@@ -32,28 +32,12 @@ export async function POST(req: NextRequest) {
           break
       }
 
-      // Try both sonar models to see which one works
-      let result
-      try {
-        console.log("Trying sonar-pro model...")
-        result = await generateText({
-          model: perplexity("sonar-pro"),
-          prompt,
-          maxTokens: 1000,
-        })
-      } catch (sonarProError) {
-        console.log("sonar-pro failed, trying sonar model...", sonarProError.message)
-        try {
-          result = await generateText({
-            model: perplexity("sonar"),
-            prompt,
-            maxTokens: 1000,
-          })
-        } catch (sonarError) {
-          console.log("Both sonar models failed", sonarError.message)
-          throw new Error(`Perplexity models failed: sonar-pro: ${sonarProError.message}, sonar: ${sonarError.message}`)
-        }
-      }
+      // Use the Perplexity Sonar API to generate a summary
+      const result = await generateText({
+        model: perplexity("sonar-pro"),
+        prompt,
+        maxTokens: 1000,
+      })
 
       // Return the summary
       return NextResponse.json({ summary: result.text })
@@ -140,7 +124,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ summary: result.text })
   } catch (error) {
     console.error("Error in summarize API route:", error)
-    const errorMessage = error instanceof Error ? error.message : "Failed to generate summary"
-    return NextResponse.json({ error: `API Error: ${errorMessage}` }, { status: 500 })
+    return NextResponse.json({ error: "Failed to generate summary" }, { status: 500 })
   }
 }
