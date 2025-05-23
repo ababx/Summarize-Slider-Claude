@@ -130,59 +130,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid model selected" }, { status: 400 })
     }
 
-    // Configure provider with API key
-    let configuredModel
-    try {
-      console.log("Configuring model:", selectedModel.model, "for provider:", selectedModel.providerName)
-      
-      if (!apiKey) {
-        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
-      }
-
-      switch (selectedModel.providerName) {
-        case "openai":
-          const openai = await getOpenAI()
-          const openaiConfig = selectedModel.baseURL 
-            ? { apiKey: apiKey, baseURL: selectedModel.baseURL }
-            : { apiKey: apiKey }
-          const openaiProvider = openai(openaiConfig)
-          configuredModel = openaiProvider(selectedModel.model)
-          break
-          
-        case "google":
-          const google = await getGoogle()
-          const googleProvider = google({ apiKey: apiKey })
-          configuredModel = googleProvider(selectedModel.model)
-          break
-          
-        case "anthropic":
-          const anthropic = await getAnthropic()
-          const anthropicProvider = anthropic({ apiKey: apiKey })
-          configuredModel = anthropicProvider(selectedModel.model)
-          break
-          
-        case "perplexity":
-          const perplexityProvider = perplexity({ apiKey: apiKey })
-          configuredModel = perplexityProvider(selectedModel.model)
-          break
-          
-        default:
-          return NextResponse.json({ error: `Unsupported provider: ${selectedModel.providerName}` }, { status: 400 })
-      }
-
-      if (!configuredModel) {
-        return NextResponse.json({ error: `Failed to configure model: ${model}` }, { status: 400 })
-      }
-      
-      console.log("Model configured successfully:", selectedModel.providerName)
-    } catch (providerError) {
-      console.error("Provider configuration error:", providerError)
-      return NextResponse.json({ error: `Provider configuration failed for ${model}: ${providerError.message}` }, { status: 400 })
-    }
-
     // Create a prompt based on the complexity level
     let prompt = ""
-
     switch (complexity) {
       case "eli5":
         prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
@@ -196,27 +145,111 @@ export async function POST(req: NextRequest) {
         break
     }
 
-    // Use the selected AI model to generate a summary
-    console.log("Calling generateText with model:", model, "prompt length:", prompt.length)
+    // Use direct API calls for all providers to avoid SDK issues
     try {
-      const result = await generateText({
-        model: configuredModel,
-        prompt,
-        maxTokens: 1000,
-      })
-      console.log("Generated text successfully, length:", result.text?.length)
+      console.log("Using direct API call for:", selectedModel.model, "provider:", selectedModel.providerName)
       
-      // Return the summary
-      return NextResponse.json({ summary: result.text })
-    } catch (generateError) {
-      console.error("Generate text error:", generateError)
+      if (!apiKey) {
+        return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
+      }
+
+      let apiResponse
       
-      // Check if it's an authentication error
-      if (generateError.message?.includes('401') || generateError.message?.toLowerCase().includes('unauthorized') || generateError.message?.toLowerCase().includes('invalid api key')) {
-        return NextResponse.json({ error: `Invalid API key for ${model}. Please check your API key is correct and has the required permissions.` }, { status: 401 })
+      switch (selectedModel.providerName) {
+        case "openai":
+          const openaiBaseURL = selectedModel.baseURL || "https://api.openai.com/v1"
+          apiResponse = await fetch(`${openaiBaseURL}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: selectedModel.model,
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 1000,
+              temperature: 0.2
+            })
+          })
+          break
+          
+        case "google":
+          apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.model}:generateContent?key=${apiKey}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { maxOutputTokens: 1000, temperature: 0.2 }
+            })
+          })
+          break
+          
+        case "anthropic":
+          apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: selectedModel.model,
+              max_tokens: 1000,
+              messages: [{ role: "user", content: prompt }]
+            })
+          })
+          break
+          
+        case "perplexity":
+          apiResponse = await fetch("https://api.perplexity.ai/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: selectedModel.model,
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 1000,
+              temperature: 0.2
+            })
+          })
+          break
+          
+        default:
+          return NextResponse.json({ error: `Unsupported provider: ${selectedModel.providerName}` }, { status: 400 })
+      }
+
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text()
+        throw new Error(`${selectedModel.providerName} API error ${apiResponse.status}: ${errorText}`)
+      }
+
+      const data = await apiResponse.json()
+      let summaryText = "No summary generated"
+      
+      // Extract text based on provider response format
+      switch (selectedModel.providerName) {
+        case "openai":
+        case "perplexity":
+          summaryText = data.choices?.[0]?.message?.content || summaryText
+          break
+        case "google":
+          summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text || summaryText
+          break
+        case "anthropic":
+          summaryText = data.content?.[0]?.text || summaryText
+          break
       }
       
-      return NextResponse.json({ error: `Text generation failed for ${model}: ${generateError.message}` }, { status: 500 })
+      console.log("API call successful for:", selectedModel.providerName)
+      return NextResponse.json({ summary: summaryText })
+      
+    } catch (providerError) {
+      console.error("Provider API error:", providerError)
+      return NextResponse.json({ error: `API call failed for ${model}: ${providerError.message}` }, { status: 500 })
     }
   } catch (error) {
     console.error("Error in summarize API route:", error)
