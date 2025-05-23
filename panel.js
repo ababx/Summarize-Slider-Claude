@@ -68,16 +68,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Models data (Gemini Flash as default, separate from user API keys)
+  // Model IDs match the API expected format
   const models = [
-    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true },
-    { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity" },
-    { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google" },
-    { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic" },
-    { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic" },
-    { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
-    { id: "gpt-o3", name: "GPT-o3", provider: "openai" },
-    { id: "gpt-o4-mini", name: "GPT-o4-mini", provider: "openai" },
-    { id: "grok-3", name: "Grok 3", provider: "xai" }
+    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
+    { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity", apiId: "perplexity-sonar" },
+    { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google", apiId: "google-gemini-2.5-pro" },
+    { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
+    { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
+    { id: "gpt-4o", name: "GPT-4o", provider: "openai", apiId: "openai-gpt-4o" },
+    { id: "gpt-o3", name: "GPT-o3", provider: "openai", apiId: "openai-o3" },
+    { id: "gpt-o4-mini", name: "GPT-o4-mini", provider: "openai", apiId: "openai-o4-mini" },
+    { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
   ]
 
   // Get models for a specific provider
@@ -113,12 +114,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (apiKey.length <= 8) return apiKey
     
+    // Check for corrupted keys (containing unusual characters)
+    if (!/^[a-zA-Z0-9\-_]+$/.test(apiKey)) {
+      console.log('Warning: API key contains non-standard characters')
+      console.log('First 10 chars:', apiKey.substring(0, 10))
+      return 'Corrupted key - please re-enter'
+    }
+    
     const first4 = apiKey.substring(0, 4)
     const last4 = apiKey.substring(apiKey.length - 4)
     const middleLength = Math.max(20, apiKey.length - 8) // Show at least 20 bullets
     const masked = first4 + '•'.repeat(middleLength) + last4
     
-    console.log('Masked result:', masked.substring(0, 20) + '...')
+    console.log('Masked result preview:', masked.substring(0, 20) + '...')
     return masked
   }
 
@@ -225,12 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="key-preview">${maskedKey}</span>
           </div>
           <div class="api-key-actions">
-            <button class="btn-small btn-ghost btn-icon" onclick="window.editApiKey('${currentProvider}')" title="Edit">
+            <button class="btn-small btn-ghost btn-icon edit-key-btn" data-provider="${currentProvider}" title="Edit">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
-            <button class="btn-small btn-ghost btn-icon" onclick="window.removeApiKey('${currentProvider}')" title="Remove">
+            <button class="btn-small btn-ghost btn-icon remove-key-btn" data-provider="${currentProvider}" title="Remove">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -239,6 +247,26 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
       `
+      
+      // Add event listeners for edit and remove buttons
+      const editBtn = apiKeyContainer.querySelector('.edit-key-btn')
+      const removeBtn = apiKeyContainer.querySelector('.remove-key-btn')
+      
+      if (editBtn) {
+        editBtn.addEventListener('click', () => {
+          const providerId = editBtn.getAttribute('data-provider')
+          console.log('Edit key clicked for:', providerId)
+          editApiKey(providerId)
+        })
+      }
+      
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          const providerId = removeBtn.getAttribute('data-provider')
+          console.log('Remove key clicked for:', providerId)
+          removeApiKey(providerId)
+        })
+      }
       
       // Show status indicator
       const indicator = document.getElementById(`${currentProvider}-indicator`)
@@ -304,11 +332,23 @@ document.addEventListener("DOMContentLoaded", () => {
               <span class="model-name">${model.name}</span>
               ${model.isDefault ? '<span class="default-badge">Default</span>' : ''}
             </div>
-            ${!model.isDefault ? `<button class="${buttonClass}" ${isDisabled ? 'disabled' : ''} onclick="${isDisabled ? '' : `setAsDefault('${model.id}')`}">${buttonText}</button>` : ''}
+            ${!model.isDefault ? `<button class="${buttonClass}" data-model-id="${model.id}" ${isDisabled ? 'disabled' : ''}>${buttonText}</button>` : ''}
           </div>
         </div>
       `
     }).join('')
+    
+    // Add event listeners for "Use this" buttons
+    const useThisButtons = modelsList.querySelectorAll('.set-default-btn:not(.disabled)')
+    useThisButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const modelId = button.getAttribute('data-model-id')
+        if (modelId) {
+          console.log('Setting model as default:', modelId)
+          setAsDefault(modelId)
+        }
+      })
+    })
   }
 
   // Update summarize section
@@ -368,15 +408,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  // Global functions for API key management
-  window.editApiKey = async function(providerId) {
+  // API key management functions
+  async function editApiKey(providerId) {
     const provider = providers[providerId]
     
     apiKeyContainer.innerHTML = `
       <div class="key-input-container">
         <input type="password" id="keyInput-${providerId}" class="key-input" placeholder="Enter ${provider.name} API key">
         <button class="btn-small btn-primary" disabled>Save</button>
-        <button class="btn-small btn-ghost btn-icon" onclick="window.cancelEdit('${providerId}')" title="Cancel">
+        <button class="btn-small btn-ghost btn-icon cancel-edit-btn" data-provider="${providerId}" title="Cancel">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -388,6 +428,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Setup input validation and event listeners
     const keyInput = document.getElementById(`keyInput-${providerId}`)
     const saveBtn = apiKeyContainer.querySelector('.btn-primary')
+    const cancelBtn = apiKeyContainer.querySelector('.cancel-edit-btn')
     
     keyInput.addEventListener('input', () => {
       saveBtn.disabled = !keyInput.value.trim()
@@ -398,6 +439,15 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault()
       saveApiKey(providerId)
     })
+    
+    // Add click event listener for cancel button
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        const providerId = cancelBtn.getAttribute('data-provider')
+        console.log('Cancel edit clicked for:', providerId)
+        cancelEdit(providerId)
+      })
+    }
     
     keyInput.focus()
   }
@@ -516,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  window.removeApiKey = async function(providerId) {
+  async function removeApiKey(providerId) {
     console.log('=== REMOVE API KEY START ===')
     console.log('Provider ID:', providerId)
     
@@ -561,13 +611,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  window.cancelEdit = async function(providerId) {
+  async function cancelEdit(providerId) {
     console.log('Cancel edit for:', providerId)
     await renderApiKeySection()
   }
 
-  window.setAsDefault = setAsDefault
-  window.saveApiKey = saveApiKey
+  // Functions are now properly scoped and use event listeners
 
   
   // Setup model selector button
@@ -832,11 +881,14 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSummarizeSection()
     }
 
-    // Send message to content script
+    // Send message to content script with correct API model ID
+    const modelToSend = defaultModel.isSystemDefault ? defaultModel.id : (defaultModel.apiId || defaultModel.id)
+    console.log('Sending model to API:', modelToSend)
+    
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
-      model: defaultModel.id,
+      model: modelToSend,
       apiKey: apiKey
     }, "*")
   })
