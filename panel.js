@@ -22,13 +22,14 @@ document.addEventListener("DOMContentLoaded", () => {
     "default": { provider: "perplexity", requiresApiKey: false },
     "perplexity-sonar": { provider: "perplexity", requiresApiKey: true, keyName: "PERPLEXITY_API_KEY" },
     "openai-gpt-4o": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
-    "openai-gpt-4o-mini": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
-    "openai-gpt-3.5-turbo": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
-    "google-gemini-pro": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
-    "google-gemini-flash": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
-    "anthropic-claude-3.5-sonnet": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
-    "anthropic-claude-3-haiku": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
-    "x-grok-beta": { provider: "x", requiresApiKey: true, keyName: "X_API_KEY" }
+    "openai-o3": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
+    "openai-o4-mini": { provider: "openai", requiresApiKey: true, keyName: "OPENAI_API_KEY" },
+    "google-gemini-2.5-pro": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
+    "google-gemini-2.5-flash": { provider: "google", requiresApiKey: true, keyName: "GOOGLE_API_KEY" },
+    "anthropic-claude-sonnet-4": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
+    "anthropic-claude-opus-4": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
+    "anthropic-claude-sonnet-3.7": { provider: "anthropic", requiresApiKey: true, keyName: "ANTHROPIC_API_KEY" },
+    "x-grok-3": { provider: "x", requiresApiKey: true, keyName: "X_API_KEY" }
   }
 
   // Function to prompt for API key with validation
@@ -190,13 +191,14 @@ document.addEventListener("DOMContentLoaded", () => {
       "default": "Default (Perplexity - No API Key)",
       "perplexity-sonar": "Perplexity Sonar (API Key)",
       "openai-gpt-4o": "OpenAI GPT-4o",
-      "openai-gpt-4o-mini": "OpenAI GPT-4o Mini",
-      "openai-gpt-3.5-turbo": "OpenAI GPT-3.5 Turbo",
-      "google-gemini-pro": "Google Gemini Pro",
-      "google-gemini-flash": "Google Gemini Flash",
-      "anthropic-claude-3.5-sonnet": "Anthropic Claude 3.5 Sonnet",
-      "anthropic-claude-3-haiku": "Anthropic Claude 3 Haiku",
-      "x-grok-beta": "X Grok Beta"
+      "openai-o3": "OpenAI o3",
+      "openai-o4-mini": "OpenAI o4-mini",
+      "google-gemini-2.5-pro": "Google Gemini 2.5 Pro",
+      "google-gemini-2.5-flash": "Google Gemini 2.5 Flash",
+      "anthropic-claude-sonnet-4": "Anthropic Claude Sonnet 4",
+      "anthropic-claude-opus-4": "Anthropic Claude Opus 4",
+      "anthropic-claude-sonnet-3.7": "Anthropic Claude Sonnet 3.7",
+      "x-grok-3": "X Grok 3"
     }
     return displayNames[modelId] || modelId
   }

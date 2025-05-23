@@ -23,7 +23,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "openai-gpt-4o", "anthropic-claude-3.5-sonnet", "google-gemini-pro", "x-grok-beta", "perplexity-sonar"]
+    supportedModels: ["default", "openai-gpt-4o", "openai-o3", "openai-o4-mini", "anthropic-claude-sonnet-4", "anthropic-claude-opus-4", "anthropic-claude-sonnet-3.7", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
   })
 }
 
@@ -114,13 +114,14 @@ export async function POST(req: NextRequest) {
     const modelMapping = {
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
       "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
-      "openai-gpt-4o-mini": { providerName: "openai", model: "gpt-4o-mini", requiresApiKey: true },
-      "openai-gpt-3.5-turbo": { providerName: "openai", model: "gpt-3.5-turbo", requiresApiKey: true },
-      "google-gemini-pro": { providerName: "google", model: "gemini-1.5-pro", requiresApiKey: true },
-      "google-gemini-flash": { providerName: "google", model: "gemini-1.5-flash", requiresApiKey: true },
-      "anthropic-claude-3.5-sonnet": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
-      "anthropic-claude-3-haiku": { providerName: "anthropic", model: "claude-3-haiku-20240307", requiresApiKey: true },
-      "x-grok-beta": { providerName: "openai", model: "grok-beta", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
+      "openai-o3": { providerName: "openai", model: "o3", requiresApiKey: true },
+      "openai-o4-mini": { providerName: "openai", model: "o4-mini", requiresApiKey: true },
+      "google-gemini-2.5-pro": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: true },
+      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.0-flash-thinking-exp", requiresApiKey: true },
+      "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
+      "anthropic-claude-opus-4": { providerName: "anthropic", model: "claude-3-opus-20240229", requiresApiKey: true },
+      "anthropic-claude-sonnet-3.7": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
+      "x-grok-3": { providerName: "xai", model: "grok-3-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
     }
 
     console.log("Model mapping lookup for:", model, "->", modelMapping[model])
@@ -218,6 +219,23 @@ export async function POST(req: NextRequest) {
           })
           break
           
+        case "xai":
+          apiResponse = await fetch(`${selectedModel.baseURL}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: selectedModel.model,
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 1000,
+              temperature: 0.2,
+              stream: false
+            })
+          })
+          break
+          
         default:
           return NextResponse.json({ error: `Unsupported provider: ${selectedModel.providerName}` }, { status: 400 })
       }
@@ -234,6 +252,7 @@ export async function POST(req: NextRequest) {
       switch (selectedModel.providerName) {
         case "openai":
         case "perplexity":
+        case "xai":
           summaryText = data.choices?.[0]?.message?.content || summaryText
           break
         case "google":
