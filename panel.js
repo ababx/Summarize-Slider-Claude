@@ -106,8 +106,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Mask API key for display
   function maskApiKey(apiKey) {
-    if (!apiKey || apiKey.length <= 8) return apiKey
-    return apiKey.substring(0, 4) + '•••••••••••••••••••••••••••••••••••••••' + apiKey.substring(apiKey.length - 4)
+    console.log('Masking API key:', typeof apiKey, apiKey ? apiKey.length : 'null')
+    if (!apiKey || typeof apiKey !== 'string') {
+      console.log('Invalid API key for masking')
+      return 'Invalid key'
+    }
+    if (apiKey.length <= 8) return apiKey
+    
+    const first4 = apiKey.substring(0, 4)
+    const last4 = apiKey.substring(apiKey.length - 4)
+    const middleLength = Math.max(20, apiKey.length - 8) // Show at least 20 bullets
+    const masked = first4 + '•'.repeat(middleLength) + last4
+    
+    console.log('Masked result:', masked.substring(0, 20) + '...')
+    return masked
   }
 
   // Simplified API key check
@@ -175,6 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           // Simple base64 decode
           const apiKey = atob(encryptedKey)
+          console.log('Retrieved API key preview:', apiKey.substring(0, 10) + '...')
           resolve(apiKey)
         } catch (error) {
           console.error('Failed to decode API key:', error)
@@ -191,14 +204,23 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (hasKey) {
       const apiKey = await getApiKey(provider.keyName)
+      console.log('API key for display:', typeof apiKey, apiKey ? apiKey.substring(0, 10) + '...' : 'null')
       const maskedKey = maskApiKey(apiKey)
       
       apiKeyContainer.innerHTML = `
         <div class="api-key-display">
           <div class="api-key-info">
-            <svg class="key-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12.5 7.5L15 5L17.5 7.5L15 10L12.5 7.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M3 12L8 7L10 9L5 14L3 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg class="key-icon" width="12" height="12" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#clip0_22843_178)">
+                <path d="M7.38 6.00867L1.5 11.8887L3.5 13.8887" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3.75 9.63867L5.5 11.3887" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12.5 3.88867C12.5 5.54552 11.1569 6.88867 9.5 6.88867C7.84315 6.88867 6.5 5.54552 6.5 3.88867C6.5 2.23182 7.84315 0.888672 9.5 0.888672C11.1569 0.888672 12.5 2.23182 12.5 3.88867Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <defs>
+                <clipPath id="clip0_22843_178">
+                  <rect width="14" height="14" fill="white" transform="matrix(-4.37114e-08 1 1 4.37114e-08 0 0.388672)"/>
+                </clipPath>
+              </defs>
             </svg>
             <span class="key-preview">${maskedKey}</span>
           </div>
@@ -324,6 +346,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Debug function to check stored keys
+  async function debugStoredKeys() {
+    console.log('=== DEBUG STORED KEYS ===')
+    for (const providerId of Object.keys(providers)) {
+      const provider = providers[providerId]
+      const keyName = `encrypted_${provider.keyName}`
+      chrome.storage.local.get([keyName], (result) => {
+        if (result[keyName]) {
+          console.log(`${provider.name} key exists, length:`, result[keyName].length)
+          console.log(`${provider.name} key preview:`, result[keyName].substring(0, 20) + '...')
+          try {
+            const decoded = atob(result[keyName])
+            console.log(`${provider.name} decoded preview:`, decoded.substring(0, 10) + '...')
+          } catch (e) {
+            console.log(`${provider.name} decode error:`, e.message)
+          }
+        }
+      })
+    }
+  }
+
 
   // Global functions for API key management
   window.editApiKey = async function(providerId) {
@@ -333,7 +376,12 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="key-input-container">
         <input type="password" id="keyInput-${providerId}" class="key-input" placeholder="Enter ${provider.name} API key">
         <button class="btn-small btn-primary" disabled>Save</button>
-        <button class="btn-small btn-ghost" onclick="cancelEdit('${providerId}')">Cancel</button>
+        <button class="btn-small btn-ghost btn-icon" onclick="window.cancelEdit('${providerId}')" title="Cancel">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     `
     
@@ -399,9 +447,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
       // 7. Store the API key
       console.log('Storing API key...')
+      console.log('Original API key preview:', apiKey.substring(0, 10) + '...')
+      
+      const encodedKey = btoa(apiKey)
+      console.log('Encoded key preview:', encodedKey.substring(0, 20) + '...')
+      
       const result = await new Promise((resolve, reject) => {
         chrome.storage.local.set({
-          [`encrypted_${provider.keyName}`]: btoa(apiKey), // Simple base64 encoding for now
+          [`encrypted_${provider.keyName}`]: encodedKey,
           [`key_timestamp_${provider.keyName}`]: Date.now()
         }, () => {
           if (chrome.runtime.lastError) {
@@ -448,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Simplified remove API key function
-  async function removeApiKey(keyName) {
+  async function deleteApiKeyFromStorage(keyName) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.remove([
         `encrypted_${keyName}`,
@@ -464,14 +517,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.removeApiKey = async function(providerId) {
+    console.log('=== REMOVE API KEY START ===')
+    console.log('Provider ID:', providerId)
+    
     const provider = providers[providerId]
+    if (!provider) {
+      console.error('Provider not found:', providerId)
+      showNotification('Error: Invalid provider', 'error')
+      return
+    }
     
     if (!confirm(`Are you sure you want to remove your ${provider.name} API key? This action cannot be undone.`)) {
       return
     }
     
     try {
-      await removeApiKey(provider.keyName)
+      console.log('Removing API key for:', provider.keyName)
+      await deleteApiKeyFromStorage(provider.keyName)
+      console.log('API key removed successfully')
+      
       showNotification(`🗑️ ${provider.name} API key removed successfully`, 'success')
       
       // Update UI
@@ -492,12 +556,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
     } catch (error) {
       console.error('Failed to remove API key:', error)
+      console.error('Error details:', error.stack)
       showNotification('Failed to remove API key. Please try again.', 'error')
     }
   }
 
-  window.cancelEdit = function(providerId) {
-    renderApiKeySection()
+  window.cancelEdit = async function(providerId) {
+    console.log('Cancel edit for:', providerId)
+    await renderApiKeySection()
   }
 
   window.setAsDefault = setAsDefault
@@ -586,6 +652,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Initialize UI
         setupTabs()
         await updateTabIndicators()
+        
+        // Debug stored keys
+        debugStoredKeys()
         
         // Switch to the first provider tab that doesn't have an API key
         let hasFoundProviderWithoutKey = false
