@@ -23,7 +23,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
+    supportedModels: ["default", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
   })
 }
 
@@ -112,7 +112,9 @@ export async function POST(req: NextRequest) {
 
     // Model configuration mapping
     const modelMapping = {
-      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: false, useSystemKey: true },
+      "gemini-flash-2.5": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: false, useSystemKey: true },
+      "gemini-flash-2.5-user": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
+      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
       "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
       "openai-gpt-4o-mini": { providerName: "openai", model: "gpt-4o-mini", requiresApiKey: true },
@@ -141,17 +143,33 @@ export async function POST(req: NextRequest) {
       // Use default prompts
       switch (complexity) {
         case "eli5":
-          prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use markdown formatting with bullet points for better readability:\n\n${text}`
+          prompt = `Please create an insightful summary of the following content from ${url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and break down complex ideas into easy-to-follow bullet points. Focus on the main points, key takeaways, and why this information matters:\n\n${text}`
           break
         case "phd":
-          prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use markdown formatting with bullet points for better readability:\n\n${text}`
+          prompt = `Please provide a sophisticated, insightful analysis and summary of the following content from ${url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Use markdown formatting with bullet points for better readability:\n\n${text}`
           break
         case "standard":
         default:
-          prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting with bullet points for better readability:\n\n${text}`
+          prompt = `Please create an insightful, comprehensive summary of the following content from ${url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Use markdown formatting with bullet points for better readability:\n\n${text}`
           break
       }
     }
+
+    // Set token limits based on complexity level
+    const getTokenLimit = (complexity: string) => {
+      switch (complexity) {
+        case "eli5":
+          return 800   // Shorter, simpler summaries
+        case "phd":
+          return 2000  // Longer, more detailed expert summaries
+        case "standard":
+        default:
+          return 1000  // Standard length
+      }
+    }
+
+    const tokenLimit = getTokenLimit(complexity)
+    console.log("Token limit for", complexity, "complexity:", tokenLimit)
 
     // Use direct API calls for all providers to avoid SDK issues
     try {
@@ -162,6 +180,8 @@ export async function POST(req: NextRequest) {
       if (selectedModel.useSystemKey) {
         // Use system environment variable for Gemini Flash
         effectiveApiKey = process.env.GOOGLE_API_KEY
+        console.log("System key check - GOOGLE_API_KEY exists:", !!process.env.GOOGLE_API_KEY)
+        console.log("System key length:", effectiveApiKey?.length)
         if (!effectiveApiKey) {
           return NextResponse.json({ error: "System API key not configured" }, { status: 500 })
         }
@@ -183,7 +203,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: 1000,
+              max_tokens: tokenLimit,
               temperature: 0.2
             })
           })
@@ -198,7 +218,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { maxOutputTokens: 1000, temperature: 0.2 }
+              generationConfig: { maxOutputTokens: tokenLimit, temperature: 0.2 }
             })
           })
           break
@@ -208,7 +228,7 @@ export async function POST(req: NextRequest) {
           console.log("Anthropic API key prefix:", effectiveApiKey?.substring(0, 10))
           console.log("Anthropic request body:", JSON.stringify({
             model: selectedModel.model,
-            max_tokens: 1000,
+            max_tokens: tokenLimit,
             messages: [{ role: "user", content: prompt }]
           }))
           apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -220,7 +240,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               model: selectedModel.model,
-              max_tokens: 1000,
+              max_tokens: tokenLimit,
               messages: [{ role: "user", content: prompt }]
             })
           })
@@ -237,7 +257,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: 1000,
+              max_tokens: tokenLimit,
               temperature: 0.2
             })
           })
@@ -254,7 +274,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: 1000,
+              max_tokens: tokenLimit,
               temperature: 0.2,
               stream: false
             })

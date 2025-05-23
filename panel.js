@@ -48,9 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Default prompts
   const defaultPrompts = {
-    eli5: "Please summarize the following content from {url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use markdown formatting with bullet points for better readability:",
-    standard: "Please summarize the following content from {url} in a clear, concise manner for a general audience. Use markdown formatting with bullet points for better readability:",
-    phd: "Please provide a sophisticated, academic-level summary of the following content from {url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use markdown formatting with bullet points for better readability:"
+    eli5: "Please create an insightful summary of the following content from {url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and break down complex ideas into easy-to-follow bullet points. Focus on the main points, key takeaways, and why this information matters:",
+    standard: "Please create an insightful, comprehensive summary of the following content from {url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Use markdown formatting with bullet points for better readability:",
+    phd: "Please provide a sophisticated, insightful analysis and summary of the following content from {url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Use markdown formatting with bullet points for better readability:"
   }
 
   // Custom prompts (loaded from storage)
@@ -93,6 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const models = [
     { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
     { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity", apiId: "perplexity-sonar" },
+    { id: "gemini-flash-2.5-user", name: "Gemini Flash 2.5", provider: "google", apiId: "google-gemini-2.5-flash" },
     { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google", apiId: "google-gemini-2.5-pro" },
     { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
     { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
@@ -104,9 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
   ]
 
-  // Get models for a specific provider
+  // Get models for a specific provider (exclude system defaults)
   function getModelsForProvider(providerId) {
-    return models.filter(model => model.provider === providerId)
+    return models.filter(model => model.provider === providerId && !model.isSystemDefault)
   }
 
   // Get default model
@@ -115,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Set model as default
-  function setAsDefault(modelId) {
+  async function setAsDefault(modelId) {
     models.forEach(model => {
       model.isDefault = model.id === modelId
     })
@@ -123,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Update summarize default and persist it
     summarizeDefault = modelId
     chrome.storage.local.set({ summarizeDefault: modelId })
-    updateSummarizeSection()
+    await updateSummarizeSection()
     renderModelsForCurrentProvider()
     updateTopNavModel()
   }
@@ -137,27 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (apiKey.length <= 8) return apiKey
     
-    // Clean the API key of any special characters that might cause encoding issues
-    // Specifically replace common problematic characters first
-    let cleanApiKey = apiKey.replace(/Â/g, '·')  // Replace Â with middot
-                            .replace(/[^\x20-\x7E]/g, '')  // Remove other non-ASCII chars
-    
-    // Check for corrupted keys (containing unusual characters)
-    if (!/^[a-zA-Z0-9\-_]+$/.test(cleanApiKey)) {
-      console.log('Warning: API key contains non-standard characters')
-      console.log('First 10 chars:', cleanApiKey.substring(0, 10))
-      return 'Corrupted key - please re-enter'
-    }
-    
-    const first4 = cleanApiKey.substring(0, 4)
-    const last4 = cleanApiKey.substring(cleanApiKey.length - 4)
-    
-    // Limit the middle section to prevent overflow - max 15 dots for better display
-    const middleLength = Math.min(15, Math.max(8, cleanApiKey.length - 8))
-    const masked = first4 + '·'.repeat(middleLength) + last4
-    
-    console.log('Masked result preview:', masked.substring(0, 20) + '...')
-    return masked
+    // Simply return a clean masked format without trying to show actual characters
+    // This avoids any encoding issues with the stored key
+    return '****************'
   }
 
   // Simplified API key check
@@ -313,6 +296,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } else {
       apiKeyContainer.innerHTML = `
+        <div class="api-key-info-text">
+          <p class="api-key-description">For unlimited uses, enter your API key. Your API key is stored locally on your device and never sent to our servers. We prioritize your privacy and security.</p>
+        </div>
         <div class="key-input-container">
           <input type="password" id="keyInput-${currentProvider}" class="key-input" placeholder="Enter ${provider.name} API key">
           <button class="btn-small btn-primary" disabled>Save</button>
@@ -404,22 +390,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add event listeners for "Use this" buttons
     const useThisButtons = modelsList.querySelectorAll('.set-default-btn:not(.disabled)')
     useThisButtons.forEach(button => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', async () => {
         const modelId = button.getAttribute('data-model-id')
         if (modelId) {
           console.log('Setting model as default:', modelId)
-          setAsDefault(modelId)
+          await setAsDefault(modelId)
         }
       })
     })
   }
 
   // Update summarize section
-  function updateSummarizeSection() {
+  async function updateSummarizeSection() {
     const defaultModel = models.find(m => m.id === summarizeDefault)
-    const isUsingSystemDefault = summarizeDefault === 'gemini-flash-2.5'
+    const provider = providers[defaultModel.provider]
+    const hasUserApiKey = await hasApiKey(provider.keyName)
+    const isUsingSystemDefault = defaultModel.isSystemDefault && !hasUserApiKey
     
-    // Only show usage counter for system default (Gemini Flash)
+    // Only show usage counter when using system default WITHOUT user's API key
     if (isUsingSystemDefault) {
       usageCounter.textContent = `${summarizeUsage}/25 Monthly`
     } else {
@@ -586,7 +574,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 8. Set first model as default
       const providerModels = getModelsForProvider(providerId)
       if (providerModels.length > 0) {
-        setAsDefault(providerModels[0].id)
+        await setAsDefault(providerModels[0].id)
         chrome.storage.local.set({ summarizeDefault: providerModels[0].id })
       }
       
@@ -662,7 +650,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // If current default model uses this provider, reset to gemini-flash-2.5
       const defaultModel = getDefaultModel()
       if (defaultModel && defaultModel.provider === providerId) {
-        setAsDefault('gemini-flash-2.5')
+        await setAsDefault('gemini-flash-2.5')
         chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
         showNotification(`Default model reset to Gemini Flash 2.5`, 'info')
       }
@@ -686,20 +674,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   
   // Setup model selector button
-  modelSelectorBtn.addEventListener('click', () => {
+  modelSelectorBtn.addEventListener('click', async () => {
     const isVisible = !modelSelectorOverlay.classList.contains('hidden')
     if (isVisible) {
       modelSelectorOverlay.classList.add('hidden')
       // Refresh the display when closing
-      updateSummarizeSection()
+      await updateSummarizeSection()
     } else {
       modelSelectorOverlay.classList.remove('hidden')
     }
   })
   
   // Setup set default button
-  setDefaultBtn.addEventListener('click', () => {
-    setAsDefault('gemini-flash-2.5')
+  setDefaultBtn.addEventListener('click', async () => {
+    await setAsDefault('gemini-flash-2.5')
     chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
   })
 
@@ -873,7 +861,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     // Add event listeners for edit prompt buttons - use more specific targeting
-    document.querySelectorAll('.edit-prompt-btn').forEach(btn => {
+    document.querySelectorAll('.edit-prompt-btn, .edit-prompts-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         console.log('Edit button clicked directly:', e.target)
         e.preventDefault()
@@ -931,15 +919,15 @@ document.addEventListener("DOMContentLoaded", () => {
           // Check if the saved model still exists
           const savedModel = models.find(m => m.id === result.summarizeDefault)
           if (savedModel) {
-            setAsDefault(result.summarizeDefault)
+            await setAsDefault(result.summarizeDefault)
           } else {
             // Model no longer exists, reset to default
-            setAsDefault('gemini-flash-2.5')
+            await setAsDefault('gemini-flash-2.5')
             chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
           }
         } else {
           // No saved default, use Gemini Flash
-          setAsDefault('gemini-flash-2.5')
+          await setAsDefault('gemini-flash-2.5')
           chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
         }
 
@@ -951,13 +939,13 @@ document.addEventListener("DOMContentLoaded", () => {
         debugStoredKeys()
         
         // Clean up any invalid stored model defaults
-        chrome.storage.local.get(['summarizeDefault'], (result) => {
+        chrome.storage.local.get(['summarizeDefault'], async (result) => {
           if (result.summarizeDefault) {
             const isValidModel = models.some(m => m.id === result.summarizeDefault)
             if (!isValidModel) {
               console.log('Clearing invalid stored model:', result.summarizeDefault)
               chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
-              setAsDefault('gemini-flash-2.5')
+              await setAsDefault('gemini-flash-2.5')
             }
           }
         })
@@ -981,7 +969,7 @@ document.addEventListener("DOMContentLoaded", () => {
           await switchTab('openai')
         }
         
-        updateSummarizeSection()
+        await updateSummarizeSection()
         
         // Initialize prompt editor after everything else is loaded
         initializePromptEditor()
@@ -1126,8 +1114,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const complexityLevel = complexityLevels[complexitySlider.value]
 
-    // Only increment usage and enforce limits for system default (Gemini Flash)
-    const isUsingSystemDefault = defaultModel.id === 'gemini-flash-2.5'
+    // Only increment usage and enforce limits when using system default WITHOUT user's API key
+    const hasUserApiKey = await hasApiKey(provider.keyName)
+    const isUsingSystemDefault = defaultModel.isSystemDefault && !hasUserApiKey
     if (isUsingSystemDefault) {
       if (summarizeUsage >= 25) {
         showNotification('Monthly limit reached. Please use your own API key for unlimited access.', 'error')
@@ -1138,7 +1127,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       summarizeUsage++
       chrome.storage.local.set({ summarizeUsage })
-      updateSummarizeSection()
+      await updateSummarizeSection()
     }
 
     // Send message to content script with correct API model ID
