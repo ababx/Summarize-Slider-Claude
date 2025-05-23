@@ -1,7 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize security managers
+  console.log('Initializing KeyManager and ContentSecurity...')
   const keyManager = new KeyManager()
   const contentSecurity = new ContentSecurity()
+  console.log('KeyManager:', keyManager)
+  console.log('ContentSecurity:', contentSecurity)
   
   // Basic panel elements
   const summarizeBtn = document.getElementById("summarizeBtn")
@@ -17,7 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // New shadcn-style elements
   const modelSelectorBtn = document.getElementById("modelSelectorBtn")
-  const modelSelectorCard = document.getElementById("modelSelectorCard")
   const modelSelectorOverlay = document.getElementById("modelSelectorOverlay")
   const closeModelSelector = document.getElementById("closeModelSelector")
   const tabsList = document.getElementById("tabsList")
@@ -99,6 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.local.set({ summarizeDefault: modelId })
     updateSummarizeSection()
     renderModelsForCurrentProvider()
+    updateTopNavModel()
   }
 
   // Mask API key for display
@@ -194,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
       apiKeyContainer.innerHTML = `
         <div class="key-input-container">
           <input type="password" id="keyInput-${currentProvider}" class="key-input" placeholder="Enter ${provider.name} API key">
-          <button class="btn-small btn-primary" onclick="saveApiKey('${currentProvider}')" disabled>Save</button>
+          <button class="btn-small btn-primary" disabled>Save</button>
           <button class="btn-small btn-ghost" onclick="cancelEdit('${currentProvider}')">Cancel</button>
         </div>
       `
@@ -205,6 +208,15 @@ document.addEventListener("DOMContentLoaded", () => {
       
       keyInput.addEventListener('input', () => {
         saveBtn.disabled = !keyInput.value.trim()
+      })
+      
+      // Add click event listener for save button
+      saveBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        console.log('Save button clicked for provider:', currentProvider)
+        console.log('Button element:', saveBtn)
+        console.log('Input value:', keyInput.value)
+        saveApiKey(currentProvider)
       })
       
       // Hide status indicator
@@ -257,6 +269,18 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       setDefaultBtn.classList.add('hidden')
     }
+    
+    // Update top nav as well
+    updateTopNavModel()
+  }
+
+  // Update the current model display in top nav
+  function updateTopNavModel() {
+    const currentModelDiv = document.querySelector('.current-model')
+    const defaultModel = models.find(m => m.id === summarizeDefault)
+    if (currentModelDiv && defaultModel) {
+      currentModelDiv.textContent = defaultModel.name
+    }
   }
 
 
@@ -278,34 +302,62 @@ document.addEventListener("DOMContentLoaded", () => {
     keyInput.select()
   }
 
-  window.saveApiKey = async function(providerId) {
+  // Make sure saveApiKey is accessible globally
+  async function saveApiKey(providerId) {
     console.log('saveApiKey called for:', providerId)
+    console.log('Available providers:', Object.keys(providers))
+    
     const provider = providers[providerId]
+    if (!provider) {
+      console.error('Provider not found:', providerId)
+      showNotification('Error: Invalid provider', 'error')
+      return
+    }
+    
+    console.log('Provider found:', provider)
+    
     const keyInput = document.getElementById(`keyInput-${providerId}`)
     
     if (!keyInput) {
       console.error('Key input not found for:', providerId)
+      console.log('Looking for element ID:', `keyInput-${providerId}`)
       showNotification('Error: input field not found', 'error')
       return
     }
     
     const apiKey = keyInput.value.trim()
     console.log('API key length:', apiKey.length)
+    console.log('API key preview:', apiKey.substring(0, 10) + '...')
     
     if (!apiKey) {
       showNotification('Please enter an API key', 'error')
       return
     }
 
-    // Validate API key format
-    const validation = contentSecurity.validateApiKey(providerId, apiKey)
-    console.log('Validation result:', validation)
-    if (!validation.valid) {
-      showNotification(`Invalid API key: ${validation.reason}`, 'error')
+    // Show saving feedback
+    const saveBtn = apiKeyContainer.querySelector('.btn-primary')
+    if (!saveBtn) {
+      console.error('Save button not found')
+      showNotification('Error: save button not found', 'error')
       return
     }
+    
+    const originalText = saveBtn.textContent
+    saveBtn.textContent = 'Saving...'
+    saveBtn.disabled = true
 
     try {
+      // Validate API key format
+      console.log('Validating API key...')
+      const validation = contentSecurity.validateApiKey(providerId, apiKey)
+      console.log('Validation result:', validation)
+      if (!validation.valid) {
+        showNotification(`Invalid API key: ${validation.reason}`, 'error')
+        saveBtn.textContent = originalText
+        saveBtn.disabled = false
+        return
+      }
+
       console.log('Storing API key for:', provider.keyName)
       await keyManager.storeApiKey(provider.keyName, apiKey)
       console.log('API key stored successfully')
@@ -316,42 +368,56 @@ document.addEventListener("DOMContentLoaded", () => {
       if (providerModels.length > 0) {
         setAsDefault(providerModels[0].id)
         chrome.storage.local.set({ summarizeDefault: providerModels[0].id })
-        showNotification(`${provider.name} API key saved! ${providerModels[0].name} is now your default model.`, 'success')
+        showNotification(`✅ ${provider.name} API key saved! ${providerModels[0].name} is now your default model.`, 'success')
       } else {
-        showNotification(`${provider.name} API key saved successfully!`, 'success')
+        showNotification(`✅ ${provider.name} API key saved successfully!`, 'success')
       }
       
-      renderApiKeySection()
-      // Update all tab indicators
-      updateTabIndicators()
+      // Update the UI to show the saved key
+      await renderApiKeySection()
+      await updateTabIndicators()
+      
+      // Update the top nav to show the new default model
+      updateTopNavModel()
       
     } catch (error) {
       console.error('Failed to store API key:', error)
+      console.error('Error details:', error.stack)
       showNotification('Failed to save API key. Please try again.', 'error')
+      saveBtn.textContent = originalText
+      saveBtn.disabled = false
     }
   }
 
   window.removeApiKey = async function(providerId) {
     const provider = providers[providerId]
     
-    if (!confirm(`Remove ${provider.name} API key?`)) {
+    if (!confirm(`Are you sure you want to remove your ${provider.name} API key? This action cannot be undone.`)) {
       return
     }
     
     try {
       await keyManager.removeApiKey(provider.keyName)
-      showNotification(`${provider.name} API key removed`, 'success')
-      renderApiKeySection()
-      updateTabIndicators()
+      showNotification(`🗑️ ${provider.name} API key removed successfully`, 'success')
+      
+      // Update UI
+      await renderApiKeySection()
+      await updateTabIndicators()
       
       // If current default model uses this provider, reset to gemini-flash-2.5
       const defaultModel = getDefaultModel()
       if (defaultModel && defaultModel.provider === providerId) {
         setAsDefault('gemini-flash-2.5')
+        chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
+        showNotification(`Default model reset to Gemini Flash 2.5`, 'info')
       }
       
+      // Update top nav
+      updateTopNavModel()
+      
     } catch (error) {
-      showNotification('Failed to remove key', 'error')
+      console.error('Failed to remove API key:', error)
+      showNotification('Failed to remove API key. Please try again.', 'error')
     }
   }
 
@@ -360,17 +426,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.setAsDefault = setAsDefault
+  window.saveApiKey = saveApiKey
 
   
   // Setup model selector button
   modelSelectorBtn.addEventListener('click', () => {
-    const isVisible = !modelSelectorCard.classList.contains('hidden')
+    const isVisible = !modelSelectorOverlay.classList.contains('hidden')
     if (isVisible) {
-      modelSelectorCard.classList.add('hidden')
+      modelSelectorOverlay.classList.add('hidden')
       // Refresh the display when closing
       updateSummarizeSection()
     } else {
-      modelSelectorCard.classList.remove('hidden')
+      modelSelectorOverlay.classList.remove('hidden')
     }
   })
   
@@ -515,21 +582,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const notification = document.createElement('div')
     notification.className = `notification notification-${type}`
     notification.textContent = message
+    
+    // Enhanced styling based on type
+    const colors = {
+      success: { bg: '#10b981', border: '#059669' },
+      error: { bg: '#ef4444', border: '#dc2626' },
+      info: { bg: '#3b82f6', border: '#2563eb' }
+    }
+    
+    const color = colors[type] || colors.info
+    
     notification.style.cssText = `
       position: fixed;
-      top: 10px;
-      right: 10px;
-      background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+      top: 20px;
+      right: 20px;
+      background: ${color.bg};
+      border: 1px solid ${color.border};
       color: white;
       padding: 12px 16px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 14px;
       font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
       z-index: 10000;
-      max-width: 300px;
+      max-width: 320px;
+      line-height: 1.4;
       transform: translateX(100%);
-      transition: transform 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     `
     
     document.body.appendChild(notification)
@@ -545,7 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
           notification.parentNode.removeChild(notification)
         }
       }, 300)
-    }, 4000)
+    }, type === 'error' ? 6000 : 4000) // Show errors longer
   }
 
   // Make labels clickable
@@ -656,6 +735,14 @@ document.addEventListener("DOMContentLoaded", () => {
       modelSelectorOverlay.classList.add("hidden")
     }
   })
+
+  // Prevent clicks inside the popup from bubbling up to close the popup
+  const modelSelectorPopup = modelSelectorOverlay.querySelector('.model-selector-popup')
+  if (modelSelectorPopup) {
+    modelSelectorPopup.addEventListener("click", (e) => {
+      e.stopPropagation()
+    })
+  }
 
   // Initialize slider position and handle resize
   updateSliderThumbPosition(complexitySlider.value)

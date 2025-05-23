@@ -13,7 +13,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 600px;
+  width: 500px;
   height: 100vh;
   background-color: #f9fafb;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
@@ -23,6 +23,7 @@
   transition: transform 0.3s ease;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
+  overflow: hidden;
 }
 
 .summarizer-panel.hidden {
@@ -31,7 +32,7 @@
 
 .panel-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 16px 20px;
   background: white;
@@ -39,14 +40,11 @@
   gap: 20px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.header-main {
   flex: 1;
 }
 
-.header-right {
+.header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -55,16 +53,14 @@
 .panel-title {
   font-size: 20px;
   font-weight: 700;
-  margin: 0;
+  margin: 0 0 4px 0;
   color: #111827;
-  white-space: nowrap;
 }
 
 .current-model {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
-  white-space: nowrap;
 }
 
 .model-selector-btn {
@@ -504,6 +500,13 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.panel-content * {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Complexity Section */
@@ -682,7 +685,6 @@
 }
 
 .summary-container {
-  margin-top: 24px;
   border-top: 1px solid #e5e7eb;
   padding-top: 16px;
 }

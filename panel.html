@@ -6,8 +6,11 @@
 <body>
   <div class="summarizer-panel">
     <div class="panel-header">
-      <div class="header-left">
+      <div class="header-main">
         <h1 class="panel-title">Summarize Slider</h1>
+        <div class="current-model">Gemini Flash 2.5</div>
+      </div>
+      <div class="header-actions">
         <button id="modelSelectorBtn" class="model-selector-btn">
           <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clip-path="url(#clip0_22843_178)">
@@ -23,15 +26,12 @@
           </svg>
           Choose Model & Add Keys
         </button>
-      </div>
-      <div class="header-right">
-        <div class="current-model">Gemini Flash 2.5</div>
         <button id="closePanel" class="close-button">&times;</button>
       </div>
     </div>
 
     <!-- Model Selector Popup Overlay (Hidden by default) -->
-    <div class="model-selector-overlay hidden" id="modelSelectorCard">
+    <div class="model-selector-overlay hidden" id="modelSelectorOverlay">
       <div class="model-selector-popup">
         <div class="popup-header">
           <h2 class="popup-title">Choose Model & Add Keys</h2>
