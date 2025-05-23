@@ -64,28 +64,46 @@ export async function POST(req: NextRequest) {
             break
         }
 
-        // Use the Perplexity Sonar API to generate a summary
+        // Use direct Perplexity API call to avoid SDK issues
         const perplexityApiKey = process.env.PERPLEXITY_API_KEY
         
         if (!perplexityApiKey) {
           throw new Error("PERPLEXITY_API_KEY environment variable is not set")
         }
         
-        console.log("Using Perplexity API key from environment")
+        console.log("Using direct Perplexity API call")
         
-        // Configure Perplexity with API key
-        const perplexityProvider = perplexity({
-          apiKey: perplexityApiKey
-        })
-        
-        const result = await generateText({
-          model: perplexityProvider("sonar-pro"),
-          prompt,
-          maxTokens: 1000,
+        // Direct API call to Perplexity
+        const response = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${perplexityApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sonar-pro",
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            max_tokens: 1000,
+            temperature: 0.2,
+            top_p: 0.9
+          })
         })
 
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Perplexity API error ${response.status}: ${errorText}`)
+        }
+
+        const data = await response.json()
+        const summaryText = data.choices?.[0]?.message?.content || "No summary generated"
+
         // Return the summary
-        return NextResponse.json({ summary: result.text })
+        return NextResponse.json({ summary: summaryText })
       } catch (defaultError) {
         console.error("Error in default Perplexity processing:", defaultError)
         return NextResponse.json({ error: `Default model failed: ${defaultError.message}` }, { status: 500 })
