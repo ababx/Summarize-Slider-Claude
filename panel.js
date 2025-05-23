@@ -17,15 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // New shadcn-style elements
   const modelSelectorBtn = document.getElementById("modelSelectorBtn")
-  const currentModelName = document.getElementById("currentModelName")
   const modelSelectorCard = document.getElementById("modelSelectorCard")
   const tabsList = document.getElementById("tabsList")
   const apiKeyContainer = document.getElementById("apiKeyContainer")
   const modelsList = document.getElementById("modelsList")
-  const usageBadge = document.getElementById("usageBadge")
-  const resetBtn = document.getElementById("resetBtn")
+  const usageCounter = document.getElementById("usageCounter")
+  const setDefaultBtn = document.getElementById("setDefaultBtn")
   const defaultModelName = document.getElementById("defaultModelName")
-  const customIndicator = document.getElementById("customIndicator")
 
   // State
   let currentProvider = "openai"
@@ -221,28 +219,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Update summarize section
   function updateSummarizeSection() {
-    usageBadge.textContent = `${summarizeUsage}/25 used`
+    usageCounter.textContent = `${summarizeUsage}/25 Monthly`
     
     const defaultModel = models.find(m => m.id === summarizeDefault)
-    defaultModelName.textContent = defaultModel ? defaultModel.name : 'Unknown Model'
+    defaultModelName.textContent = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
     
-    // Update current model name in header
-    currentModelName.textContent = defaultModel ? defaultModel.name : 'Unknown Model'
-    
-    // Show/hide reset button and custom indicator
+    // Show/hide set default button - only show if current default is NOT Gemini Flash
     if (summarizeDefault !== 'gemini-flash-2.5') {
-      resetBtn.classList.remove('hidden')
-      customIndicator.classList.remove('hidden')
+      setDefaultBtn.classList.remove('hidden')
     } else {
-      resetBtn.classList.add('hidden')
-      customIndicator.classList.add('hidden')
+      setDefaultBtn.classList.add('hidden')
     }
   }
 
-  // Reset summarize default
-  function resetSummarizeDefault() {
-    setAsDefault('gemini-flash-2.5')
-  }
 
   // Global functions for API key management
   window.editApiKey = async function(providerId) {
@@ -326,8 +315,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.setAsDefault = setAsDefault
 
-  // Setup reset button
-  resetBtn.addEventListener('click', resetSummarizeDefault)
   
   // Setup model selector button
   modelSelectorBtn.addEventListener('click', () => {
@@ -337,6 +324,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       modelSelectorCard.classList.remove('hidden')
     }
+  })
+  
+  // Setup set default button
+  setDefaultBtn.addEventListener('click', () => {
+    setAsDefault('gemini-flash-2.5')
+    chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
   })
 
   // Check if chrome is defined, if not, define it as an empty object with required methods
@@ -391,9 +384,13 @@ document.addEventListener("DOMContentLoaded", () => {
         summarizeUsage = result.summarizeUsage || 0
         summarizeDefault = result.summarizeDefault || 'perplexity-sonar'
         
-        // Set the saved default
-        if (result.summarizeDefault) {
+        // Set the saved default (ensure it's never perplexity-sonar)
+        if (result.summarizeDefault && result.summarizeDefault !== 'perplexity-sonar') {
           setAsDefault(result.summarizeDefault)
+        } else {
+          // Always default to Gemini Flash if no saved default or if it was perplexity
+          setAsDefault('gemini-flash-2.5')
+          chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
         }
 
         // Initialize UI
