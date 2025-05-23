@@ -23,13 +23,13 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "openai-gpt-4o", "openai-o3", "openai-o4-mini", "anthropic-claude-sonnet-4", "anthropic-claude-opus-4", "anthropic-claude-sonnet-3.7", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
+    supportedModels: ["default", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
   })
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -112,17 +112,17 @@ export async function POST(req: NextRequest) {
 
     // Model configuration mapping
     const modelMapping = {
-      "gemini-flash-2.5": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: false, useSystemKey: true },
+      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: false, useSystemKey: true },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
       "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
-      "openai-o3": { providerName: "openai", model: "o3", requiresApiKey: true },
-      "openai-o4-mini": { providerName: "openai", model: "o4-mini", requiresApiKey: true },
-      "google-gemini-2.5-pro": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: true },
-      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.0-flash-thinking-exp", requiresApiKey: true },
-      "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
+      "openai-gpt-4o-mini": { providerName: "openai", model: "gpt-4o-mini", requiresApiKey: true },
+      "openai-gpt-4-turbo": { providerName: "openai", model: "gpt-4-turbo", requiresApiKey: true },
+      "openai-gpt-3.5-turbo": { providerName: "openai", model: "gpt-3.5-turbo", requiresApiKey: true },
+      "google-gemini-2.5-pro": { providerName: "google", model: "gemini-1.5-pro", requiresApiKey: true },
       "anthropic-claude-opus-4": { providerName: "anthropic", model: "claude-3-opus-20240229", requiresApiKey: true },
-      "anthropic-claude-sonnet-3.7": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
-      "x-grok-3": { providerName: "xai", model: "grok-3-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
+      "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
+      "anthropic-claude-3.5-haiku": { providerName: "anthropic", model: "claude-3-5-haiku-20241022", requiresApiKey: true },
+      "x-grok-3": { providerName: "xai", model: "grok-2-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
     }
 
     console.log("Model mapping lookup for:", model, "->", modelMapping[model])
@@ -132,19 +132,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid model selected" }, { status: 400 })
     }
 
-    // Create a prompt based on the complexity level
+    // Create a prompt based on the complexity level or use custom prompt
     let prompt = ""
-    switch (complexity) {
-      case "eli5":
-        prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
-        break
-      case "phd":
-        prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis:\n\n${text}`
-        break
-      case "standard":
-      default:
-        prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability:\n\n${text}`
-        break
+    if (customPrompt) {
+      // Use custom prompt and replace {url} placeholder
+      prompt = customPrompt.replace('{url}', url) + `\n\n${text}`
+    } else {
+      // Use default prompts
+      switch (complexity) {
+        case "eli5":
+          prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use bullet points:\n\n${text}`
+          break
+        case "phd":
+          prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use bullet points:\n\n${text}`
+          break
+        case "standard":
+        default:
+          prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability. Use bullet points:\n\n${text}`
+          break
+      }
     }
 
     // Use direct API calls for all providers to avoid SDK issues
@@ -184,6 +190,7 @@ export async function POST(req: NextRequest) {
           break
           
         case "google":
+          console.log("Google API call with model:", selectedModel.model, "API key length:", effectiveApiKey?.length)
           apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.model}:generateContent?key=${effectiveApiKey}`, {
             method: "POST",
             headers: {
@@ -197,10 +204,17 @@ export async function POST(req: NextRequest) {
           break
           
         case "anthropic":
+          console.log("Anthropic API call with model:", selectedModel.model, "API key length:", effectiveApiKey?.length)
+          console.log("Anthropic API key prefix:", effectiveApiKey?.substring(0, 10))
+          console.log("Anthropic request body:", JSON.stringify({
+            model: selectedModel.model,
+            max_tokens: 1000,
+            messages: [{ role: "user", content: prompt }]
+          }))
           apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${effectiveApiKey}`,
+              "x-api-key": effectiveApiKey,
               "Content-Type": "application/json",
               "anthropic-version": "2023-06-01"
             },
@@ -213,6 +227,7 @@ export async function POST(req: NextRequest) {
           break
           
         case "perplexity":
+          console.log("Perplexity API call with model:", selectedModel.model, "API key length:", effectiveApiKey?.length)
           apiResponse = await fetch("https://api.perplexity.ai/chat/completions", {
             method: "POST",
             headers: {
@@ -229,6 +244,7 @@ export async function POST(req: NextRequest) {
           break
           
         case "xai":
+          console.log("XAI API call with model:", selectedModel.model, "API key length:", effectiveApiKey?.length, "baseURL:", selectedModel.baseURL)
           apiResponse = await fetch(`${selectedModel.baseURL}/chat/completions`, {
             method: "POST",
             headers: {
@@ -251,6 +267,7 @@ export async function POST(req: NextRequest) {
 
       if (!apiResponse.ok) {
         const errorText = await apiResponse.text()
+        console.error(`${selectedModel.providerName} API error ${apiResponse.status}:`, errorText)
         throw new Error(`${selectedModel.providerName} API error ${apiResponse.status}: ${errorText}`)
       }
 

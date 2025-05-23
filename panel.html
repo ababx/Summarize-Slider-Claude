@@ -87,9 +87,11 @@
         <!-- Model Selector Footer -->
         <div class="model-selector-footer">
           <div class="default-model-section">
-            <span class="default-label">Summarize Slider default model:</span>
-            <div class="default-model-info">
-              <span class="default-model-name" id="defaultModelName">Gemini Flash 2.5</span>
+            <div class="default-label">Summarize Slider default model (<span id="footerUsageCounter">0/25 monthly used</span>):</div>
+            <div class="model-card-header">
+              <div class="model-info">
+                <span class="default-model-name" id="defaultModelName">Gemini Flash 2.5</span>
+              </div>
               <button class="set-default-btn hidden" id="setDefaultBtn">Use this</button>
             </div>
           </div>
@@ -113,15 +115,36 @@
           
           <div class="slider-labels">
             <div class="slider-label-group" data-value="0">
-              <div class="slider-label">ELI5</div>
+              <div class="slider-label">ELI5
+                <button class="edit-prompt-btn" data-complexity="eli5" title="Edit ELI5 prompt">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
               <div class="slider-sublabel">Explain like I'm 5</div>
             </div>
             <div class="slider-label-group" data-value="1">
-              <div class="slider-label">Standard</div>
+              <div class="slider-label">Standard
+                <button class="edit-prompt-btn" data-complexity="standard" title="Edit Standard prompt">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
               <div class="slider-sublabel">Just the essentials</div>
             </div>
             <div class="slider-label-group" data-value="2">
-              <div class="slider-label">Expert Level</div>
+              <div class="slider-label">Expert Level
+                <button class="edit-prompt-btn" data-complexity="phd" title="Edit Expert Level prompt">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
               <div class="slider-sublabel">Deep-dive</div>
             </div>
           </div>
@@ -144,6 +167,37 @@
       
       <div id="errorContainer" class="error-container hidden">
         <p id="errorMessage"></p>
+      </div>
+    </div>
+    
+    <!-- Prompt Editor Popup Overlay (Hidden by default) -->
+    <div class="prompt-editor-overlay hidden" id="promptEditorOverlay">
+      <div class="prompt-editor-popup">
+        <div class="popup-header">
+          <h2 class="popup-title">Edit Prompts</h2>
+          <button id="closePromptEditor" class="popup-close">&times;</button>
+        </div>
+        <div class="prompt-editor-content">
+          <div class="prompt-section">
+            <label class="prompt-label">ELI5 Prompt:</label>
+            <textarea id="eli5Prompt" class="prompt-textarea" placeholder="Enter ELI5 prompt..."></textarea>
+          </div>
+          <div class="prompt-section">
+            <label class="prompt-label">Standard Prompt:</label>
+            <textarea id="standardPrompt" class="prompt-textarea" placeholder="Enter Standard prompt..."></textarea>
+          </div>
+          <div class="prompt-section">
+            <label class="prompt-label">Expert Level Prompt:</label>
+            <textarea id="phdPrompt" class="prompt-textarea" placeholder="Enter Expert Level prompt..."></textarea>
+          </div>
+          <div class="prompt-actions">
+            <button id="resetToDefault" class="btn-reset">Reset to Default</button>
+            <div class="prompt-actions-right">
+              <button id="cancelPromptEdit" class="btn-secondary">Cancel</button>
+              <button id="savePromptEdit" class="btn-primary">Save</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     

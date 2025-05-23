@@ -151,6 +151,7 @@ if (!document.getElementById("summarizer-panel-container")) {
             complexity: event.data.complexity,
             model: event.data.model,
             apiKey: event.data.apiKey,
+            customPrompt: event.data.customPrompt,
             tabId: currentTabId, // Pass the tab ID
           },
           (response) => {

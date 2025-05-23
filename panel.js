@@ -28,12 +28,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const usageCounter = document.getElementById("usageCounter")
   const setDefaultBtn = document.getElementById("setDefaultBtn")
   const defaultModelName = document.getElementById("defaultModelName")
+  const footerUsageCounter = document.getElementById("footerUsageCounter")
+
+  // Prompt editor elements
+  const promptEditorOverlay = document.getElementById("promptEditorOverlay")
+  const closePromptEditor = document.getElementById("closePromptEditor")
+  const eli5PromptTextarea = document.getElementById("eli5Prompt")
+  const standardPromptTextarea = document.getElementById("standardPrompt")
+  const phdPromptTextarea = document.getElementById("phdPrompt")
+  const savePromptEdit = document.getElementById("savePromptEdit")
+  const cancelPromptEdit = document.getElementById("cancelPromptEdit")
+  const resetToDefault = document.getElementById("resetToDefault")
 
   // State
   let currentProvider = "openai"
   let currentTabId = null
   let summarizeUsage = 0
   let summarizeDefault = "gemini-flash-2.5"
+
+  // Default prompts
+  const defaultPrompts = {
+    eli5: "Please summarize the following content from {url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use bullet points:",
+    standard: "Please summarize the following content from {url} in a clear, concise manner for a general audience. Use markdown formatting for better readability. Use bullet points:",
+    phd: "Please provide a sophisticated, academic-level summary of the following content from {url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use bullet points:"
+  }
+
+  // Custom prompts (loaded from storage)
+  let customPrompts = { ...defaultPrompts }
   
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
@@ -73,11 +94,13 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
     { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity", apiId: "perplexity-sonar" },
     { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google", apiId: "google-gemini-2.5-pro" },
-    { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
     { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
+    { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
+    { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", provider: "anthropic", apiId: "anthropic-claude-3.5-haiku" },
     { id: "gpt-4o", name: "GPT-4o", provider: "openai", apiId: "openai-gpt-4o" },
-    { id: "gpt-o3", name: "GPT-o3", provider: "openai", apiId: "openai-o3" },
-    { id: "gpt-o4-mini", name: "GPT-o4-mini", provider: "openai", apiId: "openai-o4-mini" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", apiId: "openai-gpt-4o-mini" },
+    { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", apiId: "openai-gpt-4-turbo" },
+    { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", apiId: "openai-gpt-3.5-turbo" },
     { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
   ]
 
@@ -114,17 +137,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (apiKey.length <= 8) return apiKey
     
+    // Clean the API key of any special characters that might cause encoding issues
+    // Specifically replace common problematic characters first
+    let cleanApiKey = apiKey.replace(/Â/g, '·')  // Replace Â with middot
+                            .replace(/[^\x20-\x7E]/g, '')  // Remove other non-ASCII chars
+    
     // Check for corrupted keys (containing unusual characters)
-    if (!/^[a-zA-Z0-9\-_]+$/.test(apiKey)) {
+    if (!/^[a-zA-Z0-9\-_]+$/.test(cleanApiKey)) {
       console.log('Warning: API key contains non-standard characters')
-      console.log('First 10 chars:', apiKey.substring(0, 10))
+      console.log('First 10 chars:', cleanApiKey.substring(0, 10))
       return 'Corrupted key - please re-enter'
     }
     
-    const first4 = apiKey.substring(0, 4)
-    const last4 = apiKey.substring(apiKey.length - 4)
-    const middleLength = Math.max(20, apiKey.length - 8) // Show at least 20 bullets
-    const masked = first4 + '•'.repeat(middleLength) + last4
+    const first4 = cleanApiKey.substring(0, 4)
+    const last4 = cleanApiKey.substring(cleanApiKey.length - 4)
+    
+    // Limit the middle section to prevent overflow - max 15 dots for better display
+    const middleLength = Math.min(15, Math.max(8, cleanApiKey.length - 8))
+    const masked = first4 + '·'.repeat(middleLength) + last4
     
     console.log('Masked result preview:', masked.substring(0, 20) + '...')
     return masked
@@ -194,7 +224,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
           // Simple base64 decode
-          const apiKey = atob(encryptedKey)
+          let apiKey = atob(encryptedKey)
+          // Clean any problematic characters that might have been introduced during encoding
+          apiKey = apiKey.replace(/Â/g, '').replace(/[^\x20-\x7E]/g, '')
           console.log('Retrieved API key preview:', apiKey.substring(0, 10) + '...')
           resolve(apiKey)
         } catch (error) {
@@ -230,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </clipPath>
               </defs>
             </svg>
-            <span class="key-preview">${maskedKey}</span>
+            <span class="key-preview" id="key-preview-${currentProvider}"></span>
           </div>
           <div class="api-key-actions">
             <button class="btn-small btn-ghost btn-icon edit-key-btn" data-provider="${currentProvider}" title="Edit">
@@ -247,6 +279,12 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
       `
+      
+      // Set the masked key using textContent to avoid HTML encoding issues
+      const keyPreview = document.getElementById(`key-preview-${currentProvider}`)
+      if (keyPreview) {
+        keyPreview.textContent = maskedKey
+      }
       
       // Add event listeners for edit and remove buttons
       const editBtn = apiKeyContainer.querySelector('.edit-key-btn')
@@ -320,13 +358,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const provider = providers[currentProvider]
     const providerHasKey = await hasApiKey(provider.keyName)
     
+    // Pre-check API keys for all providers that have models in this list
+    const providerKeys = {}
+    for (const model of providerModels) {
+      if (!providerKeys[model.provider]) {
+        const modelProvider = providers[model.provider]
+        if (modelProvider) {
+          providerKeys[model.provider] = await hasApiKey(modelProvider.keyName)
+        }
+      }
+    }
+    
     modelsList.innerHTML = providerModels.map(model => {
       const isDisabled = !providerHasKey && !model.isSystemDefault
       const buttonClass = isDisabled ? 'btn-small btn-ghost set-default-btn disabled' : 'btn-small btn-ghost set-default-btn'
       const buttonText = isDisabled ? 'API key required' : 'Use this'
       
+      // Determine if this model is active (selected as default and provider has API key)
+      // System default models (like Gemini Flash) are always considered active when selected
+      const modelHasKey = model.isSystemDefault || providerKeys[model.provider]
+      const isActiveModel = model.isDefault && modelHasKey
+      
+      const cardClasses = []
+      
+      if (model.isDefault && !isActiveModel) {
+        cardClasses.push('default') // Blue border when default but no API key
+      }
+      if (isActiveModel) {
+        cardClasses.push('active') // Green background when default and has API key/is system
+      }
+      
       return `
-        <div class="model-card ${model.isDefault ? 'default' : ''}">
+        <div class="model-card ${cardClasses.join(' ')}">
           <div class="model-card-header">
             <div class="model-info">
               <span class="model-name">${model.name}</span>
@@ -362,6 +425,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       usageCounter.textContent = 'Unlimited'
     }
+    
+    // Footer always shows current usage regardless of which model is being used
+    footerUsageCounter.textContent = `${summarizeUsage}/25 monthly used`
     
     // Keep footer text static - do NOT update defaultModelName
     // defaultModelName should always show "Gemini Flash 2.5"
@@ -658,10 +724,148 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Load custom prompts from storage
+  async function loadCustomPrompts() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['customPrompts'], (result) => {
+        if (result.customPrompts) {
+          customPrompts = { ...defaultPrompts, ...result.customPrompts }
+        }
+        resolve()
+      })
+    })
+  }
+
+  // Save custom prompts to storage
+  function saveCustomPrompts() {
+    chrome.storage.local.set({ customPrompts })
+  }
+
+  // Open prompt editor
+  function openPromptEditor() {
+    console.log('Opening prompt editor...')
+    console.log('Current custom prompts:', customPrompts)
+    console.log('Default prompts:', defaultPrompts)
+    console.log('Textarea elements:', { eli5PromptTextarea, standardPromptTextarea, phdPromptTextarea })
+    
+    // Prefill with the exact prompts that are being sent to models
+    if (eli5PromptTextarea) {
+      eli5PromptTextarea.value = customPrompts.eli5 || defaultPrompts.eli5
+      console.log('Set ELI5 value:', eli5PromptTextarea.value)
+    }
+    if (standardPromptTextarea) {
+      standardPromptTextarea.value = customPrompts.standard || defaultPrompts.standard
+      console.log('Set Standard value:', standardPromptTextarea.value)
+    }
+    if (phdPromptTextarea) {
+      phdPromptTextarea.value = customPrompts.phd || defaultPrompts.phd
+      console.log('Set PhD value:', phdPromptTextarea.value)
+    }
+    
+    if (promptEditorOverlay) {
+      promptEditorOverlay.classList.remove("hidden")
+      console.log('Popup should now be visible')
+    }
+  }
+
+  // Close prompt editor
+  function closePromptEditorPopup() {
+    console.log('Closing prompt editor...')
+    if (promptEditorOverlay) {
+      promptEditorOverlay.classList.add("hidden")
+      console.log('Popup should now be hidden')
+    }
+  }
+
+  // Save edited prompts
+  function saveEditedPrompts() {
+    customPrompts.eli5 = eli5PromptTextarea.value.trim()
+    customPrompts.standard = standardPromptTextarea.value.trim()
+    customPrompts.phd = phdPromptTextarea.value.trim()
+    
+    // Fallback to defaults if empty
+    if (!customPrompts.eli5) customPrompts.eli5 = defaultPrompts.eli5
+    if (!customPrompts.standard) customPrompts.standard = defaultPrompts.standard
+    if (!customPrompts.phd) customPrompts.phd = defaultPrompts.phd
+    
+    saveCustomPrompts()
+    closePromptEditorPopup()
+  }
+
+  // Reset prompts to default
+  function resetPromptsToDefault() {
+    console.log('Resetting prompts to default...')
+    
+    // Reset the textareas to default prompts
+    if (eli5PromptTextarea) {
+      eli5PromptTextarea.value = defaultPrompts.eli5
+    }
+    if (standardPromptTextarea) {
+      standardPromptTextarea.value = defaultPrompts.standard
+    }
+    if (phdPromptTextarea) {
+      phdPromptTextarea.value = defaultPrompts.phd
+    }
+    
+    console.log('Prompts reset to defaults in textareas')
+  }
+
+  // Get current prompt for complexity level
+  function getCurrentPrompt(complexity) {
+    return customPrompts[complexity] || defaultPrompts[complexity]
+  }
+
+  // Initialize prompt editor event listeners (will be called after DOM is ready)
+  function initializePromptEditor() {
+    // Ensure popup starts hidden
+    if (promptEditorOverlay) {
+      promptEditorOverlay.classList.add("hidden")
+    }
+
+    // Event listeners for prompt editor
+    if (closePromptEditor) {
+      closePromptEditor.addEventListener("click", closePromptEditorPopup)
+    }
+    
+    if (cancelPromptEdit) {
+      cancelPromptEdit.addEventListener("click", closePromptEditorPopup)
+    }
+    
+    if (savePromptEdit) {
+      savePromptEdit.addEventListener("click", saveEditedPrompts)
+    }
+
+    if (resetToDefault) {
+      resetToDefault.addEventListener("click", resetPromptsToDefault)
+    }
+
+    // Add event listeners for edit prompt buttons - use more specific targeting
+    document.querySelectorAll('.edit-prompt-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        console.log('Edit button clicked directly:', e.target)
+        e.preventDefault()
+        e.stopPropagation()
+        openPromptEditor()
+      })
+    })
+
+    // Close prompt editor when clicking outside
+    if (promptEditorOverlay) {
+      promptEditorOverlay.addEventListener("click", (e) => {
+        if (e.target === promptEditorOverlay) {
+          closePromptEditorPopup()
+        }
+      })
+    }
+  }
+
   // Initialize the panel
   chrome.runtime.sendMessage({ action: "getCurrentTabId" }, async (response) => {
     if (response && response.tabId) {
       currentTabId = response.tabId
+
+      // Load custom prompts first
+      await loadCustomPrompts()
 
       // Load saved data
       chrome.storage.local.get([
@@ -687,13 +891,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Load usage and default
         summarizeUsage = result.summarizeUsage || 0
-        summarizeDefault = result.summarizeDefault || 'perplexity-sonar'
+        summarizeDefault = result.summarizeDefault || 'gemini-flash-2.5'
         
-        // Set the saved default (ensure it's never perplexity-sonar)
-        if (result.summarizeDefault && result.summarizeDefault !== 'perplexity-sonar') {
-          setAsDefault(result.summarizeDefault)
+        // Set the saved default (always ensure it's valid)
+        if (result.summarizeDefault) {
+          // Check if the saved model still exists
+          const savedModel = models.find(m => m.id === result.summarizeDefault)
+          if (savedModel) {
+            setAsDefault(result.summarizeDefault)
+          } else {
+            // Model no longer exists, reset to default
+            setAsDefault('gemini-flash-2.5')
+            chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
+          }
         } else {
-          // Always default to Gemini Flash if no saved default or if it was perplexity
+          // No saved default, use Gemini Flash
           setAsDefault('gemini-flash-2.5')
           chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
         }
@@ -704,6 +916,18 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Debug stored keys
         debugStoredKeys()
+        
+        // Clean up any invalid stored model defaults
+        chrome.storage.local.get(['summarizeDefault'], (result) => {
+          if (result.summarizeDefault) {
+            const isValidModel = models.some(m => m.id === result.summarizeDefault)
+            if (!isValidModel) {
+              console.log('Clearing invalid stored model:', result.summarizeDefault)
+              chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
+              setAsDefault('gemini-flash-2.5')
+            }
+          }
+        })
         
         // Switch to the first provider tab that doesn't have an API key
         let hasFoundProviderWithoutKey = false
@@ -725,6 +949,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         updateSummarizeSection()
+        
+        // Initialize prompt editor after everything else is loaded
+        initializePromptEditor()
       })
     }
   })
@@ -883,13 +1110,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Send message to content script with correct API model ID
     const modelToSend = defaultModel.isSystemDefault ? defaultModel.id : (defaultModel.apiId || defaultModel.id)
-    console.log('Sending model to API:', modelToSend)
+    console.log('=== SUMMARIZE REQUEST ===')
+    console.log('Default model object:', defaultModel)
+    console.log('Model ID being sent to API:', modelToSend)
+    console.log('Is system default:', defaultModel.isSystemDefault)
+    console.log('Has API key:', !!apiKey)
+    
+    // Get custom prompt for the selected complexity
+    const customPrompt = getCurrentPrompt(complexityLevel)
     
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
       model: modelToSend,
-      apiKey: apiKey
+      apiKey: apiKey,
+      customPrompt: customPrompt
     }, "*")
   })
 
