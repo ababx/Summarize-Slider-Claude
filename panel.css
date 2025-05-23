@@ -13,7 +13,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 500px;
+  width: 600px;
   height: 100vh;
   background-color: #f9fafb;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
@@ -30,32 +30,41 @@
 }
 
 .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px 20px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  gap: 20px;
 }
 
-.header-main {
-  margin-bottom: 8px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .panel-title {
   font-size: 20px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0;
   color: #111827;
+  white-space: nowrap;
 }
 
 .current-model {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  white-space: nowrap;
 }
 
 .model-selector-btn {
@@ -111,13 +120,78 @@
   background: #f3f4f6;
 }
 
-/* Model Selector Card */
-.model-selector-card {
-  margin: 8px;
+/* Model Selector Popup Overlay */
+.model-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2147483648;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.model-selector-popup {
   background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: popupSlideIn 0.2s ease-out;
+}
+
+@keyframes popupSlideIn {
+  from {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #111827;
+}
+
+.popup-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.popup-close:hover {
+  color: #374151;
+  background: #f3f4f6;
 }
 
 .card-content {

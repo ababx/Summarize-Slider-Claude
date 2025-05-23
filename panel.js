@@ -18,6 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // New shadcn-style elements
   const modelSelectorBtn = document.getElementById("modelSelectorBtn")
   const modelSelectorCard = document.getElementById("modelSelectorCard")
+  const modelSelectorOverlay = document.getElementById("modelSelectorOverlay")
+  const closeModelSelector = document.getElementById("closeModelSelector")
   const tabsList = document.getElementById("tabsList")
   const apiKeyContainer = document.getElementById("apiKeyContainer")
   const modelsList = document.getElementById("modelsList")
@@ -237,9 +239,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Update summarize section
   function updateSummarizeSection() {
-    usageCounter.textContent = `${summarizeUsage}/25 Monthly`
-    
     const defaultModel = models.find(m => m.id === summarizeDefault)
+    const isUsingSystemDefault = summarizeDefault === 'gemini-flash-2.5'
+    
+    // Only show usage counter for system default (Gemini Flash)
+    if (isUsingSystemDefault) {
+      usageCounter.textContent = `${summarizeUsage}/25 Monthly`
+    } else {
+      usageCounter.textContent = 'Unlimited'
+    }
+    
     defaultModelName.textContent = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
     
     // Show/hide set default button - only show if current default is NOT Gemini Flash
@@ -585,10 +594,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const complexityLevel = complexityLevels[complexitySlider.value]
 
-    // Increment usage
-    summarizeUsage++
-    chrome.storage.local.set({ summarizeUsage })
-    updateSummarizeSection()
+    // Only increment usage and enforce limits for system default (Gemini Flash)
+    const isUsingSystemDefault = defaultModel.id === 'gemini-flash-2.5'
+    if (isUsingSystemDefault) {
+      if (summarizeUsage >= 25) {
+        showNotification('Monthly limit reached. Please use your own API key for unlimited access.', 'error')
+        summarizeBtn.disabled = false
+        loadingIndicator.classList.add('hidden')
+        return
+      }
+      
+      summarizeUsage++
+      chrome.storage.local.set({ summarizeUsage })
+      updateSummarizeSection()
+    }
 
     // Send message to content script
     window.parent.postMessage({
@@ -619,6 +638,22 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       summarizeBtn.disabled = false
+    }
+  })
+
+  // Model selector popup handlers
+  modelSelectorBtn.addEventListener("click", () => {
+    modelSelectorOverlay.classList.remove("hidden")
+  })
+
+  closeModelSelector.addEventListener("click", () => {
+    modelSelectorOverlay.classList.add("hidden")
+  })
+
+  // Close popup when clicking outside the card
+  modelSelectorOverlay.addEventListener("click", (e) => {
+    if (e.target === modelSelectorOverlay) {
+      modelSelectorOverlay.classList.add("hidden")
     }
   })
 
