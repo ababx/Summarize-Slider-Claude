@@ -152,6 +152,7 @@ if (!document.getElementById("summarizer-panel-container")) {
             model: event.data.model,
             apiKey: event.data.apiKey,
             customPrompt: event.data.customPrompt,
+            tokenLimit: event.data.tokenLimit,
             tabId: currentTabId, // Pass the tab ID
           },
           (response) => {

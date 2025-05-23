@@ -721,6 +721,18 @@
   padding: 16px;
 }
 
+.complexity-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
 #summaryContent {
   font-family: 'Crimson Text', serif;
   font-size: 18px;
@@ -933,6 +945,42 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.prompt-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.token-limit-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.token-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.token-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.token-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
 .prompt-label {

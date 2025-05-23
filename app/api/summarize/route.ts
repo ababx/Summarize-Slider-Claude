@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt, tokenLimit } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -143,33 +143,33 @@ export async function POST(req: NextRequest) {
       // Use default prompts
       switch (complexity) {
         case "eli5":
-          prompt = `Please create an insightful summary of the following content from ${url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and break down complex ideas into easy-to-follow bullet points. Focus on the main points, key takeaways, and why this information matters:\n\n${text}`
+          prompt = `Summarize the following content from ${url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and organize information using bullet points. Focus on the main points, key takeaways, and why this information matters. Do not include introductory phrases - start directly with the summary content:\n\n${text}`
           break
         case "phd":
-          prompt = `Please provide a sophisticated, insightful analysis and summary of the following content from ${url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Use markdown formatting with bullet points for better readability:\n\n${text}`
+          prompt = `Provide a sophisticated, insightful analysis and summary of the following content from ${url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Structure your response with clear bullet points and subheadings. Do not include introductory phrases - start directly with the analysis:\n\n${text}`
           break
         case "standard":
         default:
-          prompt = `Please create an insightful, comprehensive summary of the following content from ${url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Use markdown formatting with bullet points for better readability:\n\n${text}`
+          prompt = `Provide an insightful, comprehensive summary of the following content from ${url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Format your response with clear bullet points and subheadings where appropriate. Do not include introductory phrases - start directly with the summary content:\n\n${text}`
           break
       }
     }
 
-    // Set token limits based on complexity level
-    const getTokenLimit = (complexity: string) => {
+    // Set token limits based on complexity level or use custom token limit
+    const getDefaultTokenLimit = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 800   // Shorter, simpler summaries
+          return 2000  // Shorter, simpler summaries
         case "phd":
-          return 2000  // Longer, more detailed expert summaries
+          return 4000  // Longer, more detailed expert summaries
         case "standard":
         default:
-          return 1000  // Standard length
+          return 2500  // Standard length
       }
     }
 
-    const tokenLimit = getTokenLimit(complexity)
-    console.log("Token limit for", complexity, "complexity:", tokenLimit)
+    const finalTokenLimit = tokenLimit || getDefaultTokenLimit(complexity)
+    console.log("Token limit for", complexity, "complexity:", finalTokenLimit, tokenLimit ? "(custom)" : "(default)")
 
     // Use direct API calls for all providers to avoid SDK issues
     try {
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: tokenLimit,
+              max_tokens: finalTokenLimit,
               temperature: 0.2
             })
           })
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { maxOutputTokens: tokenLimit, temperature: 0.2 }
+              generationConfig: { maxOutputTokens: finalTokenLimit, temperature: 0.2 }
             })
           })
           break
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               model: selectedModel.model,
-              max_tokens: tokenLimit,
+              max_tokens: finalTokenLimit,
               messages: [{ role: "user", content: prompt }]
             })
           })
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: tokenLimit,
+              max_tokens: finalTokenLimit,
               temperature: 0.2
             })
           })
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: tokenLimit,
+              max_tokens: finalTokenLimit,
               temperature: 0.2,
               stream: false
             })

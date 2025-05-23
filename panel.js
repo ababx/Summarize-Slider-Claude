@@ -48,16 +48,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Default prompts
   const defaultPrompts = {
-    eli5: "Please create an insightful summary of the following content from {url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and break down complex ideas into easy-to-follow bullet points. Focus on the main points, key takeaways, and why this information matters:",
-    standard: "Please create an insightful, comprehensive summary of the following content from {url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Use markdown formatting with bullet points for better readability:",
-    phd: "Please provide a sophisticated, insightful analysis and summary of the following content from {url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Use markdown formatting with bullet points for better readability:"
+    eli5: "Summarize the following content from {url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and organize information using bullet points. Focus on the main points, key takeaways, and why this information matters. Do not include introductory phrases - start directly with the summary content:",
+    standard: "Provide an insightful, comprehensive summary of the following content from {url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Format your response with clear bullet points and subheadings where appropriate. Do not include introductory phrases - start directly with the summary content:",
+    phd: "Provide a sophisticated, insightful analysis and summary of the following content from {url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Structure your response with clear bullet points and subheadings. Do not include introductory phrases - start directly with the analysis:"
   }
 
   // Custom prompts (loaded from storage)
   let customPrompts = { ...defaultPrompts }
   
+  // Default token limits
+  const defaultTokenLimits = {
+    eli5: 2000,
+    standard: 2500,
+    phd: 4000
+  }
+
+  // Custom token limits (loaded from storage)
+  let customTokenLimits = { ...defaultTokenLimits }
+  
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
+  const complexityLabels = {
+    "eli5": "ELI5 Summary",
+    "standard": "Standard Summary", 
+    "phd": "Expert-Level Summary"
+  }
 
   // Provider data (matching your React component)
   const providers = {
@@ -724,35 +739,61 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
+  // Load custom token limits from storage
+  async function loadCustomTokenLimits() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['customTokenLimits'], (result) => {
+        if (result.customTokenLimits) {
+          customTokenLimits = { ...defaultTokenLimits, ...result.customTokenLimits }
+        }
+        resolve()
+      })
+    })
+  }
+
   // Save custom prompts to storage
   function saveCustomPrompts() {
     chrome.storage.local.set({ customPrompts })
+  }
+
+  function saveCustomTokenLimits() {
+    chrome.storage.local.set({ customTokenLimits })
   }
 
   // Open prompt editor
   function openPromptEditor() {
     console.log('Opening prompt editor...')
     console.log('Current custom prompts:', customPrompts)
-    console.log('Default prompts:', defaultPrompts)
-    console.log('Textarea elements:', { eli5PromptTextarea, standardPromptTextarea, phdPromptTextarea })
+    console.log('Current custom token limits:', customTokenLimits)
     
     // Prefill with the exact prompts that are being sent to models
     if (eli5PromptTextarea) {
       eli5PromptTextarea.value = customPrompts.eli5 || defaultPrompts.eli5
-      console.log('Set ELI5 value:', eli5PromptTextarea.value)
     }
     if (standardPromptTextarea) {
       standardPromptTextarea.value = customPrompts.standard || defaultPrompts.standard
-      console.log('Set Standard value:', standardPromptTextarea.value)
     }
     if (phdPromptTextarea) {
       phdPromptTextarea.value = customPrompts.phd || defaultPrompts.phd
-      console.log('Set PhD value:', phdPromptTextarea.value)
+    }
+
+    // Prefill token limits
+    const eli5TokenInput = document.getElementById('eli5TokenLimit')
+    const standardTokenInput = document.getElementById('standardTokenLimit') 
+    const phdTokenInput = document.getElementById('phdTokenLimit')
+    
+    if (eli5TokenInput) {
+      eli5TokenInput.value = customTokenLimits.eli5 || defaultTokenLimits.eli5
+    }
+    if (standardTokenInput) {
+      standardTokenInput.value = customTokenLimits.standard || defaultTokenLimits.standard
+    }
+    if (phdTokenInput) {
+      phdTokenInput.value = customTokenLimits.phd || defaultTokenLimits.phd
     }
     
     if (promptEditorOverlay) {
       promptEditorOverlay.classList.remove("hidden")
-      console.log('Popup should now be visible')
     }
   }
 
@@ -767,6 +808,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Save edited prompts
   function saveEditedPrompts() {
+    // Save prompts
     customPrompts.eli5 = eli5PromptTextarea.value.trim()
     customPrompts.standard = standardPromptTextarea.value.trim()
     customPrompts.phd = phdPromptTextarea.value.trim()
@@ -776,7 +818,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!customPrompts.standard) customPrompts.standard = defaultPrompts.standard
     if (!customPrompts.phd) customPrompts.phd = defaultPrompts.phd
     
+    // Save token limits
+    const eli5TokenInput = document.getElementById('eli5TokenLimit')
+    const standardTokenInput = document.getElementById('standardTokenLimit') 
+    const phdTokenInput = document.getElementById('phdTokenLimit')
+    
+    if (eli5TokenInput) {
+      customTokenLimits.eli5 = parseInt(eli5TokenInput.value) || defaultTokenLimits.eli5
+    }
+    if (standardTokenInput) {
+      customTokenLimits.standard = parseInt(standardTokenInput.value) || defaultTokenLimits.standard
+    }
+    if (phdTokenInput) {
+      customTokenLimits.phd = parseInt(phdTokenInput.value) || defaultTokenLimits.phd
+    }
+    
     saveCustomPrompts()
+    saveCustomTokenLimits()
     closePromptEditorPopup()
   }
 
@@ -807,25 +865,42 @@ document.addEventListener("DOMContentLoaded", () => {
         if (eli5PromptTextarea) {
           eli5PromptTextarea.value = defaultPrompts.eli5
         }
+        const eli5TokenInput = document.getElementById('eli5TokenLimit')
+        if (eli5TokenInput) {
+          eli5TokenInput.value = defaultTokenLimits.eli5
+        }
         break
       case 'standard':
         if (standardPromptTextarea) {
           standardPromptTextarea.value = defaultPrompts.standard
+        }
+        const standardTokenInput = document.getElementById('standardTokenLimit')
+        if (standardTokenInput) {
+          standardTokenInput.value = defaultTokenLimits.standard
         }
         break
       case 'phd':
         if (phdPromptTextarea) {
           phdPromptTextarea.value = defaultPrompts.phd
         }
+        const phdTokenInput = document.getElementById('phdTokenLimit')
+        if (phdTokenInput) {
+          phdTokenInput.value = defaultTokenLimits.phd
+        }
         break
     }
     
-    console.log(`${promptType} prompt reset to default`)
+    console.log(`${promptType} prompt and token limit reset to default`)
   }
 
   // Get current prompt for complexity level
   function getCurrentPrompt(complexity) {
     return customPrompts[complexity] || defaultPrompts[complexity]
+  }
+
+  // Get current token limit for complexity level
+  function getCurrentTokenLimit(complexity) {
+    return customTokenLimits[complexity] || defaultTokenLimits[complexity]
   }
 
   // Initialize prompt editor event listeners (will be called after DOM is ready)
@@ -885,8 +960,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (response && response.tabId) {
       currentTabId = response.tabId
 
-      // Load custom prompts first
+      // Load custom prompts and token limits first
       await loadCustomPrompts()
+      await loadCustomTokenLimits()
 
       // Load saved data
       chrome.storage.local.get([
@@ -906,8 +982,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (result[`complexity_${currentTabId}`] !== undefined) {
           complexitySlider.value = result[`complexity_${currentTabId}`]
           updateSliderThumbPosition(complexitySlider.value)
+          updateComplexityLabel()
         } else {
           updateSliderThumbPosition(1)
+          updateComplexityLabel()
         }
 
         // Load usage and default
@@ -976,6 +1054,15 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     }
   })
+
+  // Function to update complexity label
+  function updateComplexityLabel() {
+    const complexityLevel = complexityLevels[complexitySlider.value]
+    const complexityLabel = document.getElementById("complexityLabel")
+    if (complexityLabel) {
+      complexityLabel.textContent = complexityLabels[complexityLevel]
+    }
+  }
 
   // Function to update slider thumb position
   function updateSliderThumbPosition(value) {
@@ -1074,6 +1161,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const value = Number.parseInt(group.getAttribute("data-value"))
       complexitySlider.value = value
       updateSliderThumbPosition(value)
+      updateComplexityLabel()
 
       if (currentTabId) {
         chrome.storage.local.set({ [`complexity_${currentTabId}`]: value })
@@ -1084,6 +1172,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Update thumb position when slider value changes
   complexitySlider.addEventListener("input", () => {
     updateSliderThumbPosition(complexitySlider.value)
+    updateComplexityLabel()
   })
 
   // Close panel
@@ -1138,15 +1227,17 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('Is system default:', defaultModel.isSystemDefault)
     console.log('Has API key:', !!apiKey)
     
-    // Get custom prompt for the selected complexity
+    // Get custom prompt and token limit for the selected complexity
     const customPrompt = getCurrentPrompt(complexityLevel)
+    const customTokenLimit = getCurrentTokenLimit(complexityLevel)
     
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
       model: modelToSend,
       apiKey: apiKey,
-      customPrompt: customPrompt
+      customPrompt: customPrompt,
+      tokenLimit: customTokenLimit
     }, "*")
   })
 
@@ -1199,6 +1290,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize slider position and handle resize
   updateSliderThumbPosition(complexitySlider.value)
+  updateComplexityLabel()
   window.addEventListener("resize", () => {
     updateSliderThumbPosition(complexitySlider.value)
   })

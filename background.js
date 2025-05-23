@@ -1,6 +1,6 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getSummary") {
-    summarizeContent(request.content, request.url, request.complexity, request.model, request.apiKey, request.customPrompt)
+    summarizeContent(request.content, request.url, request.complexity, request.model, request.apiKey, request.customPrompt, request.tokenLimit)
       .then((summary) => {
         sendResponse({ summary, tabId: request.tabId })
       })
@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 })
 
-async function summarizeContent(content, url, complexity = "standard", model = "default", apiKey = null, customPrompt = null) {
+async function summarizeContent(content, url, complexity = "standard", model = "default", apiKey = null, customPrompt = null, tokenLimit = null) {
   try {
     console.log("Sending request to API endpoint...")
     console.log("Complexity level:", complexity)
@@ -60,6 +60,11 @@ async function summarizeContent(content, url, complexity = "standard", model = "
     // Include custom prompt if provided
     if (customPrompt) {
       requestBody.customPrompt = customPrompt
+    }
+
+    // Include token limit if provided
+    if (tokenLimit) {
+      requestBody.tokenLimit = tokenLimit
     }
 
     const response = await fetch(apiUrl, {
