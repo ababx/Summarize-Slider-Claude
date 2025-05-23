@@ -105,6 +105,23 @@ document.addEventListener("DOMContentLoaded", () => {
     return apiKey.substring(0, 4) + '••••••••••••••••••••••••••••••••' + apiKey.substring(apiKey.length - 4)
   }
 
+  // Update tab indicators
+  async function updateTabIndicators() {
+    for (const providerId of Object.keys(providers)) {
+      const provider = providers[providerId]
+      const indicator = document.getElementById(`${providerId}-indicator`)
+      const hasKey = await keyManager.hasApiKey(provider.keyName)
+      
+      if (indicator) {
+        if (hasKey) {
+          indicator.classList.remove('hidden')
+        } else {
+          indicator.classList.add('hidden')
+        }
+      }
+    }
+  }
+
   // Tab switching functionality
   function switchTab(providerId) {
     // Update active tab
@@ -212,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="model-name">${model.name}</span>
             ${model.isDefault ? '<span class="default-badge">Default</span>' : ''}
           </div>
-          ${!model.isDefault ? `<button class="btn-small btn-ghost set-default-btn" onclick="setAsDefault('${model.id}')">Set Default</button>` : ''}
+          ${!model.isDefault ? `<button class="btn-small btn-ghost set-default-btn" onclick="setAsDefault('${model.id}')">Use this</button>` : ''}
         </div>
       </div>
     `).join('')
@@ -253,9 +270,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.saveApiKey = async function(providerId) {
+    console.log('saveApiKey called for:', providerId)
     const provider = providers[providerId]
     const keyInput = document.getElementById(`keyInput-${providerId}`)
+    
+    if (!keyInput) {
+      console.error('Key input not found for:', providerId)
+      showNotification('Error: input field not found', 'error')
+      return
+    }
+    
     const apiKey = keyInput.value.trim()
+    console.log('API key length:', apiKey.length)
     
     if (!apiKey) {
       showNotification('Please enter an API key', 'error')
@@ -264,16 +290,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Validate API key format
     const validation = contentSecurity.validateApiKey(providerId, apiKey)
+    console.log('Validation result:', validation)
     if (!validation.valid) {
       showNotification(`Invalid API key: ${validation.reason}`, 'error')
       return
     }
 
     try {
+      console.log('Storing API key for:', provider.keyName)
       await keyManager.storeApiKey(provider.keyName, apiKey)
+      console.log('API key stored successfully')
       
       // Always set first model for this provider as the new default when API key is added
       const providerModels = getModelsForProvider(providerId)
+      console.log('Provider models:', providerModels)
       if (providerModels.length > 0) {
         setAsDefault(providerModels[0].id)
         chrome.storage.local.set({ summarizeDefault: providerModels[0].id })
@@ -283,6 +313,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       
       renderApiKeySection()
+      // Update all tab indicators
+      updateTabIndicators()
       
     } catch (error) {
       console.error('Failed to store API key:', error)
@@ -301,6 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await keyManager.removeApiKey(provider.keyName)
       showNotification(`${provider.name} API key removed`, 'success')
       renderApiKeySection()
+      updateTabIndicators()
       
       // If current default model uses this provider, reset to gemini-flash-2.5
       const defaultModel = getDefaultModel()
@@ -401,8 +434,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Initialize UI
         setupTabs()
-        await renderApiKeySection()
-        renderModelsForCurrentProvider()
+        await updateTabIndicators()
+        
+        // Switch to the first provider tab that doesn't have an API key
+        let hasFoundProviderWithoutKey = false
+        for (const providerId of Object.keys(providers)) {
+          const provider = providers[providerId]
+          const hasKey = await keyManager.hasApiKey(provider.keyName)
+          if (!hasKey && !hasFoundProviderWithoutKey) {
+            currentProvider = providerId
+            switchTab(providerId)
+            hasFoundProviderWithoutKey = true
+            break
+          }
+        }
+        
+        // If all providers have keys or none found, default to openai
+        if (!hasFoundProviderWithoutKey) {
+          currentProvider = 'openai'
+          switchTab('openai')
+        }
+        
         updateSummarizeSection()
       })
     }
