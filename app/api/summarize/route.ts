@@ -141,14 +141,14 @@ export async function POST(req: NextRequest) {
       // Use default prompts
       switch (complexity) {
         case "eli5":
-          prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use bullet points:\n\n${text}`
+          prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way. Use markdown formatting with bullet points for better readability:\n\n${text}`
           break
         case "phd":
-          prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use bullet points:\n\n${text}`
+          prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis. Use markdown formatting with bullet points for better readability:\n\n${text}`
           break
         case "standard":
         default:
-          prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability. Use bullet points:\n\n${text}`
+          prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting with bullet points for better readability:\n\n${text}`
           break
       }
     }
