@@ -863,12 +863,17 @@
   margin-bottom: 20px;
 }
 
+.prompt-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .prompt-label {
-  display: block;
   font-size: 14px;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 8px;
 }
 
 .prompt-textarea {
@@ -891,17 +896,12 @@
 
 .prompt-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
-}
-
-.prompt-actions-right {
-  display: flex;
-  gap: 12px;
 }
 
 .btn-primary {
@@ -936,19 +936,21 @@
   background: #e5e7eb;
 }
 
-.btn-reset {
+/* Removed .btn-reset styles since global reset button is removed */
+
+.btn-reset-individual {
   background: #ef4444;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.btn-reset:hover {
+.btn-reset-individual:hover {
   background: #dc2626;
 }
 
@@ -959,4 +961,5 @@
 
 #loadingIndicator p {
   font-family: 'Crimson Text', serif;
+  font-size: 18px;
 }

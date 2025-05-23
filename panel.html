@@ -182,23 +182,29 @@
         </div>
         <div class="prompt-editor-content">
           <div class="prompt-section">
-            <label class="prompt-label">ELI5 Prompt:</label>
+            <div class="prompt-label-row">
+              <label class="prompt-label">ELI5 Prompt:</label>
+              <button class="btn-reset-individual" data-prompt="eli5" title="Reset ELI5 to default">Reset to Default</button>
+            </div>
             <textarea id="eli5Prompt" class="prompt-textarea" placeholder="Enter ELI5 prompt..."></textarea>
           </div>
           <div class="prompt-section">
-            <label class="prompt-label">Standard Prompt:</label>
+            <div class="prompt-label-row">
+              <label class="prompt-label">Standard Prompt:</label>
+              <button class="btn-reset-individual" data-prompt="standard" title="Reset Standard to default">Reset to Default</button>
+            </div>
             <textarea id="standardPrompt" class="prompt-textarea" placeholder="Enter Standard prompt..."></textarea>
           </div>
           <div class="prompt-section">
-            <label class="prompt-label">Expert Level Prompt:</label>
+            <div class="prompt-label-row">
+              <label class="prompt-label">Expert Level Prompt:</label>
+              <button class="btn-reset-individual" data-prompt="phd" title="Reset Expert Level to default">Reset to Default</button>
+            </div>
             <textarea id="phdPrompt" class="prompt-textarea" placeholder="Enter Expert Level prompt..."></textarea>
           </div>
           <div class="prompt-actions">
-            <button id="resetToDefault" class="btn-reset">Reset to Default</button>
-            <div class="prompt-actions-right">
-              <button id="cancelPromptEdit" class="btn-secondary">Cancel</button>
-              <button id="savePromptEdit" class="btn-primary">Save</button>
-            </div>
+            <button id="cancelPromptEdit" class="btn-secondary">Cancel</button>
+            <button id="savePromptEdit" class="btn-primary">Save</button>
           </div>
         </div>
       </div>

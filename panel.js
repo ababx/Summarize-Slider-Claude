@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const phdPromptTextarea = document.getElementById("phdPrompt")
   const savePromptEdit = document.getElementById("savePromptEdit")
   const cancelPromptEdit = document.getElementById("cancelPromptEdit")
-  const resetToDefault = document.getElementById("resetToDefault")
+  // Remove resetToDefault element reference since it's no longer in HTML
 
   // State
   let currentProvider = "openai"
@@ -810,6 +810,31 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('Prompts reset to defaults in textareas')
   }
 
+  // Reset individual prompt to default
+  function resetIndividualPrompt(promptType) {
+    console.log('Resetting individual prompt to default:', promptType)
+    
+    switch (promptType) {
+      case 'eli5':
+        if (eli5PromptTextarea) {
+          eli5PromptTextarea.value = defaultPrompts.eli5
+        }
+        break
+      case 'standard':
+        if (standardPromptTextarea) {
+          standardPromptTextarea.value = defaultPrompts.standard
+        }
+        break
+      case 'phd':
+        if (phdPromptTextarea) {
+          phdPromptTextarea.value = defaultPrompts.phd
+        }
+        break
+    }
+    
+    console.log(`${promptType} prompt reset to default`)
+  }
+
   // Get current prompt for complexity level
   function getCurrentPrompt(complexity) {
     return customPrompts[complexity] || defaultPrompts[complexity]
@@ -835,9 +860,17 @@ document.addEventListener("DOMContentLoaded", () => {
       savePromptEdit.addEventListener("click", saveEditedPrompts)
     }
 
-    if (resetToDefault) {
-      resetToDefault.addEventListener("click", resetPromptsToDefault)
-    }
+    // Removed global reset button - now using individual reset buttons only
+
+    // Add event listeners for individual reset buttons
+    document.querySelectorAll('.btn-reset-individual').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const promptType = btn.getAttribute('data-prompt')
+        resetIndividualPrompt(promptType)
+      })
+    })
 
     // Add event listeners for edit prompt buttons - use more specific targeting
     document.querySelectorAll('.edit-prompt-btn').forEach(btn => {
