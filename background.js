@@ -66,19 +66,27 @@ async function summarizeContent(content, url, complexity = "standard", model = "
     })
 
     console.log("Response status:", response.status)
+    console.log("Response headers:", Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Error response:", errorText)
+      console.error("Error response status:", response.status)
+      console.error("Error response text:", errorText)
+      console.error("Full response object:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      })
 
-      let errorMessage = `API request failed with status ${response.status}`
+      let errorMessage = `API request failed with status ${response.status}: ${response.statusText}`
       try {
         const errorData = JSON.parse(errorText)
         if (errorData.error) {
-          errorMessage = errorData.error
+          errorMessage = `${errorMessage} - ${errorData.error}`
         }
       } catch (e) {
-        // If parsing fails, use the default error message
+        errorMessage = `${errorMessage} - Raw response: ${errorText}`
       }
 
       throw new Error(errorMessage)
