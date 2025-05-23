@@ -70,8 +70,15 @@ export async function POST(req: NextRequest) {
 
         // Use the Perplexity Sonar API to generate a summary
         const perplexity = await getPerplexity()
+        const perplexityApiKey = process.env.PERPLEXITY_API_KEY
+        
+        if (!perplexityApiKey) {
+          throw new Error("PERPLEXITY_API_KEY environment variable is not set")
+        }
+        
+        const perplexityProvider = perplexity({ apiKey: perplexityApiKey })
         const result = await generateText({
-          model: perplexity("sonar-pro"),
+          model: perplexityProvider("sonar-pro"),
           prompt,
           maxTokens: 1000,
         })
