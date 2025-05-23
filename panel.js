@@ -12,7 +12,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const sliderLabelGroups = document.querySelectorAll(".slider-label-group")
   const closeButton = document.getElementById("closePanel")
   const sliderThumb = document.getElementById("sliderThumb")
-  const modelSelector = document.getElementById("modelSelector")
+  
+  // Custom dropdown elements
+  const customModelSelector = document.getElementById("customModelSelector")
+  const selectTrigger = document.getElementById("selectTrigger")
+  const selectValue = document.getElementById("selectValue")
+  const selectContent = document.getElementById("selectContent")
+  const keyManagementBtn = document.getElementById("keyManagementBtn")
+  const keyManagementDialog = document.getElementById("keyManagementDialog")
+  const closeKeyDialog = document.getElementById("closeKeyDialog")
+  const keyList = document.getElementById("keyList")
+  const providerSelect = document.getElementById("providerSelect")
+  const apiKeyInput = document.getElementById("apiKeyInput")
+  const toggleKeyVisibility = document.getElementById("toggleKeyVisibility")
+  const saveKeyBtn = document.getElementById("saveKeyBtn")
+  
+  // Current selected model
+  let currentSelectedModel = "default"
 
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
@@ -32,39 +48,422 @@ document.addEventListener("DOMContentLoaded", () => {
     "x-grok-3": { provider: "x", requiresApiKey: true, keyName: "X_API_KEY" }
   }
 
-  // Function to prompt for API key with validation
-  async function promptForApiKey(provider, keyName) {
-    const providerNames = {
-      openai: "OpenAI",
-      google: "Google",
-      anthropic: "Anthropic",
-      x: "X (formerly Twitter)",
-      perplexity: "Perplexity"
+  // Provider names for display
+  const providerNames = {
+    openai: "OpenAI",
+    google: "Google",
+    anthropic: "Anthropic",
+    x: "X.AI",
+    perplexity: "Perplexity"
+  }
+
+  // Function to get display name for models
+  function getModelDisplayName(modelId) {
+    const displayNames = {
+      "default": "Default (Perplexity - No API Key)",
+      "perplexity-sonar": "Perplexity Sonar",
+      "openai-gpt-4o": "OpenAI GPT-4o",
+      "openai-o3": "OpenAI o3",
+      "openai-o4-mini": "OpenAI o4-mini",
+      "google-gemini-2.5-pro": "Google Gemini 2.5 Pro",
+      "google-gemini-2.5-flash": "Google Gemini 2.5 Flash",
+      "anthropic-claude-sonnet-4": "Anthropic Claude Sonnet 4",
+      "anthropic-claude-opus-4": "Anthropic Claude Opus 4",
+      "anthropic-claude-sonnet-3.7": "Anthropic Claude Sonnet 3.7",
+      "x-grok-3": "X Grok 3"
+    }
+    return displayNames[modelId] || modelId
+  }
+
+  // Update the selected model display
+  function updateSelectedModelDisplay() {
+    selectValue.textContent = getModelDisplayName(currentSelectedModel)
+    
+    // Update selected state in dropdown
+    const selectItems = selectContent.querySelectorAll('.select-item')
+    selectItems.forEach(item => {
+      if (item.getAttribute('data-value') === currentSelectedModel) {
+        item.classList.add('selected')
+      } else {
+        item.classList.remove('selected')
+      }
+    })
+  }
+
+  // Custom dropdown functionality
+  selectTrigger.addEventListener("click", () => {
+    const isOpen = selectTrigger.classList.contains('open')
+    if (isOpen) {
+      closeDropdown()
+    } else {
+      openDropdown()
+    }
+  })
+
+  function openDropdown() {
+    selectTrigger.classList.add('open')
+    selectContent.classList.remove('hidden')
+    updateModelDropdownOrder()
+  }
+
+  function closeDropdown() {
+    selectTrigger.classList.remove('open')
+    selectContent.classList.add('hidden')
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (event) => {
+    if (!customModelSelector.contains(event.target)) {
+      closeDropdown()
+    }
+  })
+
+  // Handle model selection
+  selectContent.addEventListener('click', async (event) => {
+    const selectItem = event.target.closest('.select-item')
+    if (!selectItem) return
+
+    const selectedModel = selectItem.getAttribute('data-value')
+    
+    // Check if API key is needed and prompt immediately
+    if (modelConfig[selectedModel].requiresApiKey) {
+      const existingKey = await keyManager.getApiKey(modelConfig[selectedModel].keyName)
+      
+      if (!existingKey) {
+        // Open key management dialog for this provider
+        const provider = modelConfig[selectedModel].provider
+        openKeyManagementDialog(provider)
+        return
+      } else {
+        // Model already has API key, just set as global default if different
+        const currentGlobal = await getGlobalDefaultModel()
+        if (currentGlobal !== selectedModel) {
+          await setGlobalDefaultModel(selectedModel)
+          showNotification(`${getModelDisplayName(selectedModel)} is now your default model`, 'info')
+        }
+      }
+    } else {
+      // For models that don't require API keys (like default)
+      const currentGlobal = await getGlobalDefaultModel()
+      if (currentGlobal !== selectedModel) {
+        await setGlobalDefaultModel(selectedModel)
+      }
     }
     
-    const providerName = providerNames[provider] || provider
-    const apiKey = prompt(`Please enter your ${providerName} API key to use this model:\n\nNote: Your API key will be encrypted and stored locally.`)
+    currentSelectedModel = selectedModel
+    updateSelectedModelDisplay()
+    closeDropdown()
     
-    if (apiKey && apiKey.trim()) {
-      // Validate API key format
-      const validation = contentSecurity.validateApiKey(provider, apiKey.trim())
-      if (!validation.valid) {
-        alert(`Invalid API key: ${validation.reason}`)
-        return null
+    // Save model preference for this tab (this now acts as tab-specific override)
+    if (currentTabId) {
+      chrome.storage.local.set({ [`model_${currentTabId}`]: selectedModel })
+    }
+  })
+
+  // Function to check which models have API keys and update dropdown
+  async function updateModelDropdownOrder() {
+    const modelsWithKeys = []
+    const modelsWithoutKeys = []
+
+    // Check each model for stored API keys
+    for (const [modelId, config] of Object.entries(modelConfig)) {
+      if (modelId === "default") {
+        modelsWithoutKeys.push({ id: modelId, config })
+        continue
+      }
+
+      if (config.requiresApiKey) {
+        const hasKey = await keyManager.hasApiKey(config.keyName)
+
+        if (hasKey) {
+          modelsWithKeys.push({ id: modelId, config })
+        } else {
+          modelsWithoutKeys.push({ id: modelId, config })
+        }
+      } else {
+        modelsWithoutKeys.push({ id: modelId, config })
+      }
+    }
+
+    // Update custom dropdown items
+    const selectItems = selectContent.querySelectorAll('.select-item')
+    
+    selectItems.forEach(item => {
+      const modelId = item.getAttribute('data-value')
+      const statusElement = item.querySelector('.item-status')
+      
+      if (modelId === 'default') {
+        // Default doesn't need status
+        return
       }
       
-      try {
-        // Store the encrypted API key
-        await keyManager.storeApiKey(keyName, apiKey.trim())
-        return apiKey.trim()
-      } catch (error) {
-        console.error('Failed to store API key:', error)
-        alert('Failed to securely store API key. Please try again.')
-        return null
+      const hasKey = modelsWithKeys.some(m => m.id === modelId)
+      
+      if (hasKey) {
+        statusElement.textContent = '🔑✅ Configured'
+        statusElement.setAttribute('data-status', 'configured')
+      } else {
+        statusElement.textContent = '🔑 Required'
+        statusElement.setAttribute('data-status', 'unconfigured')
+      }
+    })
+
+    // Get global default model preference if not already set
+    if (currentSelectedModel === "default") {
+      const globalDefault = await getGlobalDefaultModel()
+      
+      // Set the dropdown to the global default if it exists and is configured
+      if (globalDefault && modelsWithKeys.some(m => m.id === globalDefault)) {
+        currentSelectedModel = globalDefault
+      } else if (modelsWithKeys.length > 0) {
+        // If no global default, use first configured model
+        currentSelectedModel = modelsWithKeys[0].id
+      } else {
+        currentSelectedModel = "default"
+      }
+      
+      // Update UI
+      updateSelectedModelDisplay()
+    }
+  }
+
+  // Get global default model
+  async function getGlobalDefaultModel() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['globalDefaultModel'], (result) => {
+        resolve(result.globalDefaultModel)
+      })
+    })
+  }
+
+  // Set global default model
+  async function setGlobalDefaultModel(modelId) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ globalDefaultModel: modelId }, resolve)
+    })
+  }
+
+  // API Key Management Dialog Functions
+  keyManagementBtn.addEventListener('click', () => {
+    openKeyManagementDialog()
+  })
+
+  closeKeyDialog.addEventListener('click', () => {
+    closeKeyManagementDialog()
+  })
+
+  // Close dialog when clicking overlay
+  keyManagementDialog.addEventListener('click', (event) => {
+    if (event.target === keyManagementDialog) {
+      closeKeyManagementDialog()
+    }
+  })
+
+  function openKeyManagementDialog(preSelectProvider = null) {
+    keyManagementDialog.classList.remove('hidden')
+    if (preSelectProvider) {
+      providerSelect.value = preSelectProvider
+      updateSaveButtonState()
+    }
+    refreshKeyList()
+  }
+
+  function closeKeyManagementDialog() {
+    keyManagementDialog.classList.add('hidden')
+    // Reset form
+    providerSelect.value = ''
+    apiKeyInput.value = ''
+    apiKeyInput.type = 'password'
+    updateSaveButtonState()
+  }
+
+  // Toggle password visibility
+  toggleKeyVisibility.addEventListener('click', () => {
+    if (apiKeyInput.type === 'password') {
+      apiKeyInput.type = 'text'
+      toggleKeyVisibility.innerHTML = `
+        <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+          <path d="M1 1l22 22" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      `
+    } else {
+      apiKeyInput.type = 'password'
+      toggleKeyVisibility.innerHTML = `
+        <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      `
+    }
+  })
+
+  // Update save button state
+  function updateSaveButtonState() {
+    const hasProvider = providerSelect.value.trim() !== ''
+    const hasKey = apiKeyInput.value.trim() !== ''
+    saveKeyBtn.disabled = !(hasProvider && hasKey)
+  }
+
+  providerSelect.addEventListener('change', updateSaveButtonState)
+  apiKeyInput.addEventListener('input', updateSaveButtonState)
+
+  // Save API key
+  saveKeyBtn.addEventListener('click', async () => {
+    const provider = providerSelect.value
+    const apiKey = apiKeyInput.value.trim()
+    
+    if (!provider || !apiKey) {
+      showNotification('Please select a provider and enter an API key', 'error')
+      return
+    }
+
+    // Validate API key format
+    const validation = contentSecurity.validateApiKey(provider, apiKey)
+    if (!validation.valid) {
+      showNotification(`Invalid API key: ${validation.reason}`, 'error')
+      return
+    }
+
+    try {
+      // Get the key name for this provider
+      const keyName = getKeyNameForProvider(provider)
+      
+      // Store the encrypted API key
+      await keyManager.storeApiKey(keyName, apiKey)
+      
+      // Set this provider's first model as the new global default
+      const firstModelForProvider = Object.keys(modelConfig).find(modelId => 
+        modelConfig[modelId].provider === provider && modelConfig[modelId].requiresApiKey
+      )
+      
+      if (firstModelForProvider) {
+        await setGlobalDefaultModel(firstModelForProvider)
+        currentSelectedModel = firstModelForProvider
+        updateSelectedModelDisplay()
+      }
+      
+      showNotification(`${providerNames[provider]} API key saved successfully!`, 'success')
+      
+      // Reset form
+      providerSelect.value = ''
+      apiKeyInput.value = ''
+      updateSaveButtonState()
+      
+      // Refresh the key list and model dropdown
+      refreshKeyList()
+      updateModelDropdownOrder()
+      
+    } catch (error) {
+      console.error('Failed to store API key:', error)
+      showNotification('Failed to save API key. Please try again.', 'error')
+    }
+  })
+
+  // Get key name for provider
+  function getKeyNameForProvider(provider) {
+    const keyNames = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      google: 'GOOGLE_API_KEY',
+      x: 'X_API_KEY',
+      perplexity: 'PERPLEXITY_API_KEY'
+    }
+    return keyNames[provider]
+  }
+
+  // Refresh the key list in the dialog
+  async function refreshKeyList() {
+    const storedKeys = await getAllStoredKeys()
+    
+    if (storedKeys.length === 0) {
+      keyList.innerHTML = '<div class="empty-state">No API keys configured yet</div>'
+      return
+    }
+
+    keyList.innerHTML = ''
+    
+    for (const key of storedKeys) {
+      const keyItem = document.createElement('div')
+      keyItem.className = 'key-item'
+      
+      const maskedKey = maskApiKey(key.value)
+      
+      keyItem.innerHTML = `
+        <div class="key-info">
+          <div class="key-provider">${providerNames[key.provider] || key.provider}</div>
+          <div class="key-preview">${maskedKey}</div>
+        </div>
+        <div class="key-actions">
+          <button class="btn-small btn-secondary" onclick="showFullKey('${key.keyName}')">Show</button>
+          <button class="btn-small btn-danger" onclick="removeKey('${key.keyName}', '${key.provider}')">Remove</button>
+        </div>
+      `
+      
+      keyList.appendChild(keyItem)
+    }
+  }
+
+  // Get all stored keys
+  async function getAllStoredKeys() {
+    const keys = []
+    const providers = ['openai', 'anthropic', 'google', 'x', 'perplexity']
+    
+    for (const provider of providers) {
+      const keyName = getKeyNameForProvider(provider)
+      const hasKey = await keyManager.hasApiKey(keyName)
+      
+      if (hasKey) {
+        const keyValue = await keyManager.getApiKey(keyName)
+        keys.push({
+          provider,
+          keyName,
+          value: keyValue
+        })
       }
     }
     
-    return null
+    return keys
+  }
+
+  // Mask API key for display
+  function maskApiKey(key) {
+    if (!key) return ''
+    if (key.length <= 8) return '*'.repeat(key.length)
+    return key.substring(0, 4) + '*'.repeat(Math.max(0, key.length - 8)) + key.substring(key.length - 4)
+  }
+
+  // Global functions for key management (attached to window)
+  window.showFullKey = async function(keyName) {
+    try {
+      const key = await keyManager.getApiKey(keyName)
+      showNotification(`Full key: ${key}`, 'info')
+    } catch (error) {
+      showNotification('Failed to retrieve key', 'error')
+    }
+  }
+
+  window.removeKey = async function(keyName, provider) {
+    if (!confirm(`Remove ${providerNames[provider]} API key?`)) {
+      return
+    }
+    
+    try {
+      await keyManager.removeApiKey(keyName)
+      showNotification(`${providerNames[provider]} API key removed`, 'success')
+      refreshKeyList()
+      updateModelDropdownOrder()
+      
+      // If current model uses this provider, revert to default
+      if (modelConfig[currentSelectedModel].provider === provider) {
+        currentSelectedModel = 'default'
+        updateSelectedModelDisplay()
+        await setGlobalDefaultModel('default')
+      }
+    } catch (error) {
+      showNotification('Failed to remove key', 'error')
+    }
   }
 
   // Function to check if API key exists for a model
@@ -90,11 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      let apiKey = await keyManager.getApiKey(config.keyName)
-      if (!apiKey) {
-        apiKey = await promptForApiKey(config.provider, config.keyName)
-      }
-      return apiKey
+      return await keyManager.getApiKey(config.keyName)
     } catch (error) {
       console.error('Failed to get API key:', error)
       return null
@@ -103,105 +498,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Get the current tab ID
   let currentTabId = null
-
-  // Function to check which models have API keys and reorder dropdown
-  async function updateModelDropdownOrder() {
-    const modelsWithKeys = []
-    const modelsWithoutKeys = []
-
-    // Check each model for stored API keys
-    for (const [modelId, config] of Object.entries(modelConfig)) {
-      if (modelId === "default") {
-        modelsWithoutKeys.push({ id: modelId, config })
-        continue
-      }
-
-      if (config.requiresApiKey) {
-        const hasKey = await keyManager.hasApiKey(config.keyName)
-
-        if (hasKey) {
-          modelsWithKeys.push({ id: modelId, config })
-        } else {
-          modelsWithoutKeys.push({ id: modelId, config })
-        }
-      } else {
-        modelsWithoutKeys.push({ id: modelId, config })
-      }
-    }
-
-    // Clear existing options except the first one (default)
-    const defaultOption = modelSelector.querySelector('option[value="default"]')
-    modelSelector.innerHTML = ''
-    modelSelector.appendChild(defaultOption)
-
-    // Add models with API keys first (with visual indicators)
-    modelsWithKeys.forEach(({ id }) => {
-      const option = document.createElement('option')
-      option.value = id
-      option.textContent = getModelDisplayName(id) + ' 🔑✅'
-      option.style.fontWeight = 'bold'
-      option.style.color = '#059669' // Green color for configured models
-      modelSelector.appendChild(option)
-    })
-
-    // Add models without API keys
-    modelsWithoutKeys.forEach(({ id }) => {
-      if (id !== "default") { // Skip default as it's already added
-        const option = document.createElement('option')
-        option.value = id
-        option.textContent = getModelDisplayName(id)
-        option.style.color = '#6b7280' // Gray color for unconfigured models
-        modelSelector.appendChild(option)
-      }
-    })
-
-    // Get global default model preference
-    const globalDefault = await getGlobalDefaultModel()
-    
-    // Set the dropdown to the global default if it exists and is configured
-    if (globalDefault && modelsWithKeys.some(m => m.id === globalDefault)) {
-      modelSelector.value = globalDefault
-    } else if (modelsWithKeys.length > 0) {
-      // If no global default, use first configured model
-      modelSelector.value = modelsWithKeys[0].id
-    } else {
-      modelSelector.value = "default"
-    }
-  }
-
-  // Get global default model
-  async function getGlobalDefaultModel() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['globalDefaultModel'], (result) => {
-        resolve(result.globalDefaultModel)
-      })
-    })
-  }
-
-  // Set global default model
-  async function setGlobalDefaultModel(modelId) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ globalDefaultModel: modelId }, resolve)
-    })
-  }
-
-  // Function to get display name for models
-  function getModelDisplayName(modelId) {
-    const displayNames = {
-      "default": "Default (Perplexity - No API Key)",
-      "perplexity-sonar": "Perplexity Sonar (API Key)",
-      "openai-gpt-4o": "OpenAI GPT-4o",
-      "openai-o3": "OpenAI o3",
-      "openai-o4-mini": "OpenAI o4-mini",
-      "google-gemini-2.5-pro": "Google Gemini 2.5 Pro",
-      "google-gemini-2.5-flash": "Google Gemini 2.5 Flash",
-      "anthropic-claude-sonnet-4": "Anthropic Claude Sonnet 4",
-      "anthropic-claude-opus-4": "Anthropic Claude Opus 4",
-      "anthropic-claude-sonnet-3.7": "Anthropic Claude Sonnet 3.7",
-      "x-grok-3": "X Grok 3"
-    }
-    return displayNames[modelId] || modelId
-  }
 
   // Check if chrome is defined, if not, define it as an empty object with required methods
   if (typeof chrome === "undefined") {
@@ -252,7 +548,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // Check if this tab has a specific model override
         if (result[`model_${currentTabId}`]) {
           // Tab has a specific model preference, use it
-          modelSelector.value = result[`model_${currentTabId}`]
+          currentSelectedModel = result[`model_${currentTabId}`]
+          updateSelectedModelDisplay()
         }
         // Otherwise, updateModelDropdownOrder() already set the global default
       })
@@ -339,60 +636,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSliderThumbPosition(complexitySlider.value)
   })
 
-  // Model selection handler
-  modelSelector.addEventListener("change", async () => {
-    const selectedModel = modelSelector.value
-    
-    // Check if API key is needed and prompt immediately
-    if (modelConfig[selectedModel].requiresApiKey) {
-      const existingKey = await keyManager.getApiKey(modelConfig[selectedModel].keyName)
-      
-      if (!existingKey) {
-        // Prompt for new API key
-        const apiKey = await getApiKey(selectedModel)
-        if (!apiKey) {
-          // If user cancels API key prompt, revert to previous selection
-          const globalDefault = await getGlobalDefaultModel()
-          modelSelector.value = globalDefault || "default"
-          return
-        } else {
-          // API key was added successfully!
-          console.log(`New API key added for ${selectedModel}`)
-          
-          // Set this model as the new global default
-          await setGlobalDefaultModel(selectedModel)
-          
-          // Refresh dropdown to show new configuration
-          await updateModelDropdownOrder()
-          
-          // Ensure the newly configured model is selected
-          modelSelector.value = selectedModel
-          
-          // Show success message
-          showNotification(`${getModelDisplayName(selectedModel)} is now configured and set as your default model!`, 'success')
-        }
-      } else {
-        // Model already has API key, just set as global default if different
-        const currentGlobal = await getGlobalDefaultModel()
-        if (currentGlobal !== selectedModel) {
-          await setGlobalDefaultModel(selectedModel)
-          showNotification(`${getModelDisplayName(selectedModel)} is now your default model`, 'info')
-        }
-      }
-    } else {
-      // For models that don't require API keys (like default)
-      const currentGlobal = await getGlobalDefaultModel()
-      if (currentGlobal !== selectedModel) {
-        await setGlobalDefaultModel(selectedModel)
-      }
-    }
-    
-    // Save model preference for this tab (this now acts as tab-specific override)
-    if (currentTabId) {
-      chrome.storage.local.set({ [`model_${currentTabId}`]: selectedModel })
-    }
-  })
-
   // Show notification to user
   function showNotification(message, type = 'info') {
     // Create notification element
@@ -445,7 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
     errorContainer.classList.add("hidden")
 
     // Get selected model and API key (should already be available since checked on selection)
-    const selectedModel = modelSelector.value
+    const selectedModel = currentSelectedModel
     const apiKey = modelConfig[selectedModel].requiresApiKey ? await getApiKey(selectedModel) : null
 
     // Show loading indicator
