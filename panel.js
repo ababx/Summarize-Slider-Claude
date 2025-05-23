@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Initialize security managers
+  const keyManager = new KeyManager()
+  const contentSecurity = new ContentSecurity()
   const summarizeBtn = document.getElementById("summarizeBtn")
   const loadingIndicator = document.getElementById("loadingIndicator")
   const summaryContainer = document.getElementById("summaryContainer")
@@ -28,8 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "x-grok-beta": { provider: "x", requiresApiKey: true, keyName: "X_API_KEY" }
   }
 
-  // Function to prompt for API key
-  function promptForApiKey(provider, keyName) {
+  // Function to prompt for API key with validation
+  async function promptForApiKey(provider, keyName) {
     const providerNames = {
       openai: "OpenAI",
       google: "Google",
@@ -39,12 +42,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     const providerName = providerNames[provider] || provider
-    const apiKey = prompt(`Please enter your ${providerName} API key to use this model:`)
+    const apiKey = prompt(`Please enter your ${providerName} API key to use this model:\n\nNote: Your API key will be encrypted and stored locally.`)
     
     if (apiKey && apiKey.trim()) {
-      // Store the API key
-      chrome.storage.local.set({ [keyName]: apiKey.trim() })
-      return apiKey.trim()
+      // Validate API key format
+      const validation = contentSecurity.validateApiKey(provider, apiKey.trim())
+      if (!validation.valid) {
+        alert(`Invalid API key: ${validation.reason}`)
+        return null
+      }
+      
+      try {
+        // Store the encrypted API key
+        await keyManager.storeApiKey(keyName, apiKey.trim())
+        return apiKey.trim()
+      } catch (error) {
+        console.error('Failed to store API key:', error)
+        alert('Failed to securely store API key. Please try again.')
+        return null
+      }
     }
     
     return null
@@ -57,12 +73,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return true
     }
 
-    return new Promise((resolve) => {
-      chrome.storage.local.get([config.keyName], (result) => {
-        const hasKey = result[config.keyName] && result[config.keyName].trim()
-        resolve(hasKey)
-      })
-    })
+    try {
+      return await keyManager.hasApiKey(config.keyName)
+    } catch (error) {
+      console.error('Failed to check API key:', error)
+      return false
+    }
   }
 
   // Function to get API key for a model
@@ -72,17 +88,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return null
     }
 
-    return new Promise((resolve) => {
-      chrome.storage.local.get([config.keyName], (result) => {
-        const apiKey = result[config.keyName]
-        if (apiKey && apiKey.trim()) {
-          resolve(apiKey.trim())
-        } else {
-          const newKey = promptForApiKey(config.provider, config.keyName)
-          resolve(newKey)
-        }
-      })
-    })
+    try {
+      let apiKey = await keyManager.getApiKey(config.keyName)
+      if (!apiKey) {
+        apiKey = await promptForApiKey(config.provider, config.keyName)
+      }
+      return apiKey
+    } catch (error) {
+      console.error('Failed to get API key:', error)
+      return null
+    }
   }
 
   // Get the current tab ID

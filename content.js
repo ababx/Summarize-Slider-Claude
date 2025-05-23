@@ -104,9 +104,9 @@ if (!document.getElementById("summarizer-panel-container")) {
     if (event.data.action === "extractContent") {
       try {
         // Extract the content from the page
-        const content = extractPageContent()
+        const rawContent = extractPageContent()
 
-        if (!content || content.trim() === "") {
+        if (!rawContent || rawContent.trim() === "") {
           iframe.contentWindow.postMessage(
             {
               action: "summaryResult",
@@ -116,6 +116,31 @@ if (!document.getElementById("summarizer-panel-container")) {
           )
           return
         }
+
+        // Sanitize content before sending
+        const contentSecurity = new (function() {
+          const maxContentLength = 50000
+          const sensitivePatterns = [
+            /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // Credit cards
+            /\b\d{3}-\d{2}-\d{4}\b/g, // SSN
+            /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Emails
+            /\b(?:api[_-]?key|token|password|secret)\s*[:=]\s*['"]\w+['"]/gi // API keys
+          ]
+
+          this.sanitize = function(content) {
+            if (content.length > maxContentLength) {
+              content = content.substring(0, maxContentLength) + '...'
+            }
+            
+            for (const pattern of sensitivePatterns) {
+              content = content.replace(pattern, '[REDACTED]')
+            }
+            
+            return content.replace(/\s+/g, ' ').trim()
+          }
+        })()
+
+        const content = contentSecurity.sanitize(rawContent)
 
         // Send message to background script to get summary
         chrome.runtime.sendMessage(
