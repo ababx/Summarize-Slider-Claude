@@ -159,12 +159,12 @@ export async function POST(req: NextRequest) {
     const getDefaultTokenLimit = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 2000  // Shorter, simpler summaries
+          return 3000  // Shorter, simpler summaries
         case "phd":
-          return 4000  // Longer, more detailed expert summaries
+          return 6000  // Longer, more detailed expert summaries
         case "standard":
         default:
-          return 2500  // Standard length
+          return 4000  // Standard length
       }
     }
 

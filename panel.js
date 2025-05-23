@@ -58,9 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Default token limits
   const defaultTokenLimits = {
-    eli5: 2000,
-    standard: 2500,
-    phd: 4000
+    eli5: 3000,
+    standard: 4000,
+    phd: 6000
   }
 
   // Custom token limits (loaded from storage)
