@@ -92,8 +92,9 @@ document.addEventListener("DOMContentLoaded", () => {
       model.isDefault = model.id === modelId
     })
     
-    // Update summarize default
+    // Update summarize default and persist it
     summarizeDefault = modelId
+    chrome.storage.local.set({ summarizeDefault: modelId })
     updateSummarizeSection()
     renderModelsForCurrentProvider()
   }
@@ -271,13 +272,16 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await keyManager.storeApiKey(provider.keyName, apiKey)
       
-      // Set first model for this provider as default if no default is set
+      // Always set first model for this provider as the new default when API key is added
       const providerModels = getModelsForProvider(providerId)
-      if (providerModels.length > 0 && !models.some(m => m.isDefault)) {
+      if (providerModels.length > 0) {
         setAsDefault(providerModels[0].id)
+        chrome.storage.local.set({ summarizeDefault: providerModels[0].id })
+        showNotification(`${provider.name} API key saved! ${providerModels[0].name} is now your default model.`, 'success')
+      } else {
+        showNotification(`${provider.name} API key saved successfully!`, 'success')
       }
       
-      showNotification(`${provider.name} API key saved successfully!`, 'success')
       renderApiKeySection()
       
     } catch (error) {
@@ -321,6 +325,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const isVisible = !modelSelectorCard.classList.contains('hidden')
     if (isVisible) {
       modelSelectorCard.classList.add('hidden')
+      // Refresh the display when closing
+      updateSummarizeSection()
     } else {
       modelSelectorCard.classList.remove('hidden')
     }
