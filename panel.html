@@ -7,108 +7,77 @@
   <div class="summarizer-panel">
     <div class="panel-header">
       <h1 class="panel-title">Summarize Slider</h1>
-      <div class="model-selector-container">
-        <div class="custom-select" id="customModelSelector">
-          <div class="select-trigger" id="selectTrigger">
-            <span class="select-value" id="selectValue">Default (Perplexity - No API Key)</span>
-            <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="select-content hidden" id="selectContent">
-            <div class="select-item" data-value="default">
-              <span class="item-label">Default (Perplexity - No API Key)</span>
-            </div>
-            <div class="select-item" data-value="perplexity-sonar">
-              <span class="item-label">Perplexity Sonar</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="openai-gpt-4o">
-              <span class="item-label">OpenAI GPT-4o</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="openai-o3">
-              <span class="item-label">OpenAI o3</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="openai-o4-mini">
-              <span class="item-label">OpenAI o4-mini</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="google-gemini-2.5-pro">
-              <span class="item-label">Google Gemini 2.5 Pro</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="google-gemini-2.5-flash">
-              <span class="item-label">Google Gemini 2.5 Flash</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="anthropic-claude-sonnet-4">
-              <span class="item-label">Anthropic Claude Sonnet 4</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="anthropic-claude-opus-4">
-              <span class="item-label">Anthropic Claude Opus 4</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="anthropic-claude-sonnet-3.7">
-              <span class="item-label">Anthropic Claude Sonnet 3.7</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-            <div class="select-item" data-value="x-grok-3">
-              <span class="item-label">X Grok 3</span>
-              <span class="item-status" data-status="unconfigured">🔑 Required</span>
-            </div>
-          </div>
-        </div>
-        <button id="keyManagementBtn" class="key-management-btn" title="Manage API Keys">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12.5 7.5L15 5L17.5 7.5L15 10L12.5 7.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 12L8 7L10 9L5 14L3 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M8 17L12 13L14 15L10 19L8 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>
       <button id="closePanel" class="close-button">&times;</button>
     </div>
 
-    <!-- API Key Management Dialog -->
-    <div id="keyManagementDialog" class="dialog-overlay hidden">
-      <div class="dialog-content">
-        <div class="dialog-header">
-          <h2 class="dialog-title">Manage API Keys</h2>
-          <button id="closeKeyDialog" class="dialog-close">&times;</button>
-        </div>
-        <div class="dialog-body">
-          <div class="key-list" id="keyList">
-            <!-- API keys will be populated here -->
+    <!-- Model Selector Card ---->
+    <div class="model-selector-card">
+      <div class="card-content">
+        <!-- Provider Tabs -->
+        <div class="tabs-container">
+          <div class="tabs-list" id="tabsList">
+            <button class="tab-trigger active" data-provider="openai">
+              <span class="tab-name">OpenAI</span>
+              <div class="status-indicator hidden" id="openai-indicator"></div>
+            </button>
+            <button class="tab-trigger" data-provider="anthropic">
+              <span class="tab-name">Anthropic</span>
+              <div class="status-indicator hidden" id="anthropic-indicator"></div>
+            </button>
+            <button class="tab-trigger" data-provider="google">
+              <span class="tab-name">Google</span>
+              <div class="status-indicator hidden" id="google-indicator"></div>
+            </button>
+            <button class="tab-trigger" data-provider="perplexity">
+              <span class="tab-name">Perplexity</span>
+              <div class="status-indicator hidden" id="perplexity-indicator"></div>
+            </button>
+            <button class="tab-trigger" data-provider="xai">
+              <span class="tab-name">X AI</span>
+              <div class="status-indicator hidden" id="xai-indicator"></div>
+            </button>
           </div>
-          <div class="add-key-section">
-            <h3>Add New API Key</h3>
-            <div class="form-group">
-              <label for="providerSelect">Provider:</label>
-              <select id="providerSelect" class="form-select">
-                <option value="">Select Provider</option>
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-                <option value="perplexity">Perplexity</option>
-                <option value="x">X.AI</option>
-              </select>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="tabContent">
+          <!-- API Key Management Section -->
+          <div class="api-key-section">
+            <div class="api-key-container" id="apiKeyContainer">
+              <!-- API key input/display will be populated here -->
             </div>
-            <div class="form-group">
-              <label for="apiKeyInput">API Key:</label>
-              <input type="password" id="apiKeyInput" class="form-input" placeholder="Enter your API key...">
-              <button type="button" id="toggleKeyVisibility" class="toggle-visibility">
-                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                </svg>
-              </button>
+          </div>
+
+          <!-- Models List -->
+          <div class="models-scroll-area">
+            <div class="models-list" id="modelsList">
+              <!-- Models will be populated here -->
             </div>
-            <div class="dialog-actions">
-              <button id="saveKeyBtn" class="btn-primary" disabled>Save API Key</button>
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <div class="separator"></div>
+
+        <!-- Summarize Slider Section -->
+        <div class="summarize-section">
+          <div class="summarize-header">
+            <div class="summarize-info">
+              <span class="summarize-title">Summarize Slider</span>
+              <div class="usage-badge" id="usageBadge">0/25 used</div>
             </div>
+            <button class="reset-btn hidden" id="resetBtn" title="Reset to Perplexity Sonar">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 21v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="summarize-default">
+            <span class="default-label">Default: <span id="defaultModelName">Perplexity Sonar</span></span>
+            <span class="custom-indicator hidden" id="customIndicator">Using custom default</span>
           </div>
         </div>
       </div>
@@ -162,6 +131,8 @@
       <div class="bottom-border"></div>
     </div>
   </div>
+
+  <!-- Import security libraries -->
   <script src="lib/crypto.js"></script>
   <script src="lib/content-security.js"></script>
   <script src="panel.js"></script>
