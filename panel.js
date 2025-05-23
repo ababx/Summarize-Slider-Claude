@@ -116,11 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (config.requiresApiKey) {
-        const hasKey = await new Promise((resolve) => {
-          chrome.storage.local.get([config.keyName], (result) => {
-            resolve(result[config.keyName] && result[config.keyName].trim())
-          })
-        })
+        const hasKey = await keyManager.hasApiKey(config.keyName)
 
         if (hasKey) {
           modelsWithKeys.push({ id: modelId, config })
@@ -137,11 +133,13 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSelector.innerHTML = ''
     modelSelector.appendChild(defaultOption)
 
-    // Add models with API keys first
+    // Add models with API keys first (with visual indicators)
     modelsWithKeys.forEach(({ id }) => {
       const option = document.createElement('option')
       option.value = id
-      option.textContent = getModelDisplayName(id) + ' ✓'
+      option.textContent = getModelDisplayName(id) + ' 🔑✅'
+      option.style.fontWeight = 'bold'
+      option.style.color = '#059669' // Green color for configured models
       modelSelector.appendChild(option)
     })
 
@@ -151,20 +149,39 @@ document.addEventListener("DOMContentLoaded", () => {
         const option = document.createElement('option')
         option.value = id
         option.textContent = getModelDisplayName(id)
+        option.style.color = '#6b7280' // Gray color for unconfigured models
         modelSelector.appendChild(option)
       }
     })
 
-    // Set default to first model with API key, or "default" if none
-    if (modelsWithKeys.length > 0) {
+    // Get global default model preference
+    const globalDefault = await getGlobalDefaultModel()
+    
+    // Set the dropdown to the global default if it exists and is configured
+    if (globalDefault && modelsWithKeys.some(m => m.id === globalDefault)) {
+      modelSelector.value = globalDefault
+    } else if (modelsWithKeys.length > 0) {
+      // If no global default, use first configured model
       modelSelector.value = modelsWithKeys[0].id
-      // Save this as the default for the current tab
-      if (currentTabId) {
-        chrome.storage.local.set({ [`model_${currentTabId}`]: modelsWithKeys[0].id })
-      }
     } else {
       modelSelector.value = "default"
     }
+  }
+
+  // Get global default model
+  async function getGlobalDefaultModel() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['globalDefaultModel'], (result) => {
+        resolve(result.globalDefaultModel)
+      })
+    })
+  }
+
+  // Set global default model
+  async function setGlobalDefaultModel(modelId) {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ globalDefaultModel: modelId }, resolve)
+    })
   }
 
   // Function to get display name for models
@@ -230,11 +247,12 @@ document.addEventListener("DOMContentLoaded", () => {
           updateSliderThumbPosition(1)
         }
 
-        // Override the dropdown selection if user had a specific preference
+        // Check if this tab has a specific model override
         if (result[`model_${currentTabId}`]) {
+          // Tab has a specific model preference, use it
           modelSelector.value = result[`model_${currentTabId}`]
         }
-        // Note: updateModelDropdownOrder() already set the best default
+        // Otherwise, updateModelDropdownOrder() already set the global default
       })
     }
   })
@@ -325,24 +343,94 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Check if API key is needed and prompt immediately
     if (modelConfig[selectedModel].requiresApiKey) {
-      const apiKey = await getApiKey(selectedModel)
-      if (!apiKey) {
-        // If user cancels API key prompt, revert to default
-        modelSelector.value = "default"
-        return
+      const existingKey = await keyManager.getApiKey(modelConfig[selectedModel].keyName)
+      
+      if (!existingKey) {
+        // Prompt for new API key
+        const apiKey = await getApiKey(selectedModel)
+        if (!apiKey) {
+          // If user cancels API key prompt, revert to previous selection
+          const globalDefault = await getGlobalDefaultModel()
+          modelSelector.value = globalDefault || "default"
+          return
+        } else {
+          // API key was added successfully!
+          console.log(`New API key added for ${selectedModel}`)
+          
+          // Set this model as the new global default
+          await setGlobalDefaultModel(selectedModel)
+          
+          // Refresh dropdown to show new configuration
+          await updateModelDropdownOrder()
+          
+          // Ensure the newly configured model is selected
+          modelSelector.value = selectedModel
+          
+          // Show success message
+          showNotification(`${getModelDisplayName(selectedModel)} is now configured and set as your default model!`, 'success')
+        }
       } else {
-        // API key was added successfully, refresh dropdown order
-        await updateModelDropdownOrder()
-        // Ensure the newly configured model is selected
-        modelSelector.value = selectedModel
+        // Model already has API key, just set as global default if different
+        const currentGlobal = await getGlobalDefaultModel()
+        if (currentGlobal !== selectedModel) {
+          await setGlobalDefaultModel(selectedModel)
+          showNotification(`${getModelDisplayName(selectedModel)} is now your default model`, 'info')
+        }
+      }
+    } else {
+      // For models that don't require API keys (like default)
+      const currentGlobal = await getGlobalDefaultModel()
+      if (currentGlobal !== selectedModel) {
+        await setGlobalDefaultModel(selectedModel)
       }
     }
     
-    // Save model preference for this tab
+    // Save model preference for this tab (this now acts as tab-specific override)
     if (currentTabId) {
       chrome.storage.local.set({ [`model_${currentTabId}`]: selectedModel })
     }
   })
+
+  // Show notification to user
+  function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div')
+    notification.className = `notification notification-${type}`
+    notification.textContent = message
+    notification.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+      color: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      max-width: 300px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    `
+    
+    document.body.appendChild(notification)
+    
+    // Animate in
+    setTimeout(() => {
+      notification.style.transform = 'translateX(0)'
+    }, 100)
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+      notification.style.transform = 'translateX(100%)'
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 300)
+    }, 4000)
+  }
 
   // Close panel
   closeButton.addEventListener("click", () => {

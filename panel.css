@@ -92,6 +92,19 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
+.model-selector option[style*="bold"] {
+  background-color: #f0fdf4;
+}
+
+.model-selector option[style*="color: rgb(107, 114, 128)"] {
+  font-style: italic;
+}
+
+/* Notification styles */
+.notification {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 .panel-content {
   padding: 24px;
   overflow-y: auto;
