@@ -107,7 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mask API key for display
   function maskApiKey(apiKey) {
     if (!apiKey || apiKey.length <= 8) return apiKey
-    return apiKey.substring(0, 4) + '••••••••••••••••••••••••••••••••' + apiKey.substring(apiKey.length - 4)
+    return apiKey.substring(0, 4) + '•••••••••••••••••••••••••••••••••••••••' + apiKey.substring(apiKey.length - 4)
+  }
+
+  // Simplified API key check
+  async function hasApiKey(keyName) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([`encrypted_${keyName}`], (result) => {
+        resolve(!!result[`encrypted_${keyName}`])
+      })
+    })
   }
 
   // Update tab indicators
@@ -115,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const providerId of Object.keys(providers)) {
       const provider = providers[providerId]
       const indicator = document.getElementById(`${providerId}-indicator`)
-      const hasKey = await keyManager.hasApiKey(provider.keyName)
+      const hasKey = await hasApiKey(provider.keyName)
       
       if (indicator) {
         if (hasKey) {
@@ -128,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Tab switching functionality
-  function switchTab(providerId) {
+  async function switchTab(providerId) {
     // Update active tab
     const tabTriggers = tabsList.querySelectorAll('.tab-trigger')
     tabTriggers.forEach(tab => {
@@ -140,16 +149,37 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     
     currentProvider = providerId
-    renderApiKeySection()
-    renderModelsForCurrentProvider()
+    await renderApiKeySection()
+    await renderModelsForCurrentProvider()
   }
 
   // Setup tab event listeners
   function setupTabs() {
     const tabTriggers = tabsList.querySelectorAll('.tab-trigger')
     tabTriggers.forEach(tab => {
-      tab.addEventListener('click', () => {
-        switchTab(tab.dataset.provider)
+      tab.addEventListener('click', async () => {
+        await switchTab(tab.dataset.provider)
+      })
+    })
+  }
+
+  // Simplified get API key function
+  async function getApiKey(keyName) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([`encrypted_${keyName}`], (result) => {
+        const encryptedKey = result[`encrypted_${keyName}`]
+        if (!encryptedKey) {
+          resolve(null)
+          return
+        }
+        try {
+          // Simple base64 decode
+          const apiKey = atob(encryptedKey)
+          resolve(apiKey)
+        } catch (error) {
+          console.error('Failed to decode API key:', error)
+          resolve(null)
+        }
       })
     })
   }
@@ -157,10 +187,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Render API key section for current provider
   async function renderApiKeySection() {
     const provider = providers[currentProvider]
-    const hasApiKey = await keyManager.hasApiKey(provider.keyName)
+    const hasKey = await hasApiKey(provider.keyName)
     
-    if (hasApiKey) {
-      const apiKey = await keyManager.getApiKey(provider.keyName)
+    if (hasKey) {
+      const apiKey = await getApiKey(provider.keyName)
       const maskedKey = maskApiKey(apiKey)
       
       apiKeyContainer.innerHTML = `
@@ -173,12 +203,12 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="key-preview">${maskedKey}</span>
           </div>
           <div class="api-key-actions">
-            <button class="btn-small btn-ghost btn-icon" onclick="editApiKey('${currentProvider}')" title="Edit">
+            <button class="btn-small btn-ghost btn-icon" onclick="window.editApiKey('${currentProvider}')" title="Edit">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
-            <button class="btn-small btn-ghost btn-icon" onclick="removeApiKey('${currentProvider}')" title="Remove">
+            <button class="btn-small btn-ghost btn-icon" onclick="window.removeApiKey('${currentProvider}')" title="Remove">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -228,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Render models for current provider
-  function renderModelsForCurrentProvider() {
+  async function renderModelsForCurrentProvider() {
     const providerModels = getModelsForProvider(currentProvider)
     
     if (providerModels.length === 0) {
@@ -236,17 +266,27 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
     
-    modelsList.innerHTML = providerModels.map(model => `
-      <div class="model-card ${model.isDefault ? 'default' : ''}">
-        <div class="model-card-header">
-          <div class="model-info">
-            <span class="model-name">${model.name}</span>
-            ${model.isDefault ? '<span class="default-badge">Default</span>' : ''}
+    // Check if current provider has API key
+    const provider = providers[currentProvider]
+    const providerHasKey = await hasApiKey(provider.keyName)
+    
+    modelsList.innerHTML = providerModels.map(model => {
+      const isDisabled = !providerHasKey && !model.isSystemDefault
+      const buttonClass = isDisabled ? 'btn-small btn-ghost set-default-btn disabled' : 'btn-small btn-ghost set-default-btn'
+      const buttonText = isDisabled ? 'API key required' : 'Use this'
+      
+      return `
+        <div class="model-card ${model.isDefault ? 'default' : ''}">
+          <div class="model-card-header">
+            <div class="model-info">
+              <span class="model-name">${model.name}</span>
+              ${model.isDefault ? '<span class="default-badge">Default</span>' : ''}
+            </div>
+            ${!model.isDefault ? `<button class="${buttonClass}" ${isDisabled ? 'disabled' : ''} onclick="${isDisabled ? '' : `setAsDefault('${model.id}')`}">${buttonText}</button>` : ''}
           </div>
-          ${!model.isDefault ? `<button class="btn-small btn-ghost set-default-btn" onclick="setAsDefault('${model.id}')">Use this</button>` : ''}
         </div>
-      </div>
-    `).join('')
+      `
+    }).join('')
   }
 
   // Update summarize section
@@ -261,7 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
       usageCounter.textContent = 'Unlimited'
     }
     
-    defaultModelName.textContent = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
+    // Keep footer text static - do NOT update defaultModelName
+    // defaultModelName should always show "Gemini Flash 2.5"
     
     // Show/hide set default button - only show if current default is NOT Gemini Flash
     if (summarizeDefault !== 'gemini-flash-2.5') {
@@ -270,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setDefaultBtn.classList.add('hidden')
     }
     
-    // Update top nav as well
+    // Update top nav only
     updateTopNavModel()
   }
 
@@ -287,106 +328,139 @@ document.addEventListener("DOMContentLoaded", () => {
   // Global functions for API key management
   window.editApiKey = async function(providerId) {
     const provider = providers[providerId]
-    const currentKey = await keyManager.getApiKey(provider.keyName)
     
     apiKeyContainer.innerHTML = `
       <div class="key-input-container">
-        <input type="text" id="keyInput-${providerId}" class="key-input" value="${currentKey}" placeholder="Enter ${provider.name} API key">
-        <button class="btn-small btn-primary" onclick="saveApiKey('${providerId}')">Save</button>
+        <input type="password" id="keyInput-${providerId}" class="key-input" placeholder="Enter ${provider.name} API key">
+        <button class="btn-small btn-primary" disabled>Save</button>
         <button class="btn-small btn-ghost" onclick="cancelEdit('${providerId}')">Cancel</button>
       </div>
     `
     
+    // Setup input validation and event listeners
     const keyInput = document.getElementById(`keyInput-${providerId}`)
+    const saveBtn = apiKeyContainer.querySelector('.btn-primary')
+    
+    keyInput.addEventListener('input', () => {
+      saveBtn.disabled = !keyInput.value.trim()
+    })
+    
+    // Add click event listener for save button
+    saveBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      saveApiKey(providerId)
+    })
+    
     keyInput.focus()
-    keyInput.select()
   }
 
-  // Make sure saveApiKey is accessible globally
+  // Simplified and robust API key saving
   async function saveApiKey(providerId) {
-    console.log('saveApiKey called for:', providerId)
-    console.log('Available providers:', Object.keys(providers))
+    console.log('=== SAVE API KEY START ===')
+    console.log('Provider ID:', providerId)
     
-    const provider = providers[providerId]
-    if (!provider) {
-      console.error('Provider not found:', providerId)
-      showNotification('Error: Invalid provider', 'error')
-      return
-    }
-    
-    console.log('Provider found:', provider)
-    
-    const keyInput = document.getElementById(`keyInput-${providerId}`)
-    
-    if (!keyInput) {
-      console.error('Key input not found for:', providerId)
-      console.log('Looking for element ID:', `keyInput-${providerId}`)
-      showNotification('Error: input field not found', 'error')
-      return
-    }
-    
-    const apiKey = keyInput.value.trim()
-    console.log('API key length:', apiKey.length)
-    console.log('API key preview:', apiKey.substring(0, 10) + '...')
-    
-    if (!apiKey) {
-      showNotification('Please enter an API key', 'error')
-      return
-    }
-
-    // Show saving feedback
-    const saveBtn = apiKeyContainer.querySelector('.btn-primary')
-    if (!saveBtn) {
-      console.error('Save button not found')
-      showNotification('Error: save button not found', 'error')
-      return
-    }
-    
-    const originalText = saveBtn.textContent
-    saveBtn.textContent = 'Saving...'
-    saveBtn.disabled = true
-
     try {
-      // Validate API key format
-      console.log('Validating API key...')
-      const validation = contentSecurity.validateApiKey(providerId, apiKey)
-      console.log('Validation result:', validation)
-      if (!validation.valid) {
-        showNotification(`Invalid API key: ${validation.reason}`, 'error')
-        saveBtn.textContent = originalText
-        saveBtn.disabled = false
-        return
+      // 1. Get provider info
+      const provider = providers[providerId]
+      if (!provider) {
+        throw new Error(`Invalid provider: ${providerId}`)
       }
-
-      console.log('Storing API key for:', provider.keyName)
-      await keyManager.storeApiKey(provider.keyName, apiKey)
+      
+      // 2. Get input element
+      const keyInput = document.getElementById(`keyInput-${providerId}`)
+      if (!keyInput) {
+        throw new Error('Input field not found')
+      }
+      
+      // 3. Get API key value
+      const apiKey = keyInput.value.trim()
+      if (!apiKey) {
+        showNotification('Please enter an API key', 'error')
+        return false
+      }
+      
+      // 4. Get save button
+      const saveBtn = apiKeyContainer.querySelector('.btn-primary')
+      if (!saveBtn) {
+        throw new Error('Save button not found')
+      }
+      
+      // 5. Show saving state
+      const originalText = saveBtn.textContent
+      saveBtn.textContent = 'Saving...'
+      saveBtn.disabled = true
+      
+      console.log('Attempting to save API key...')
+      
+      // 6. Validate API key (simplified validation)
+      if (apiKey.length < 10) {
+        throw new Error('API key too short')
+      }
+      
+      // 7. Store the API key
+      console.log('Storing API key...')
+      const result = await new Promise((resolve, reject) => {
+        chrome.storage.local.set({
+          [`encrypted_${provider.keyName}`]: btoa(apiKey), // Simple base64 encoding for now
+          [`key_timestamp_${provider.keyName}`]: Date.now()
+        }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError)
+          } else {
+            resolve(true)
+          }
+        })
+      })
+      
       console.log('API key stored successfully')
       
-      // Always set first model for this provider as the new default when API key is added
+      // 8. Set first model as default
       const providerModels = getModelsForProvider(providerId)
-      console.log('Provider models:', providerModels)
       if (providerModels.length > 0) {
         setAsDefault(providerModels[0].id)
         chrome.storage.local.set({ summarizeDefault: providerModels[0].id })
-        showNotification(`✅ ${provider.name} API key saved! ${providerModels[0].name} is now your default model.`, 'success')
-      } else {
-        showNotification(`✅ ${provider.name} API key saved successfully!`, 'success')
       }
       
-      // Update the UI to show the saved key
+      // 9. Show success message
+      showNotification(`✅ ${provider.name} API key saved successfully!`, 'success')
+      
+      // 10. Update UI
       await renderApiKeySection()
       await updateTabIndicators()
-      
-      // Update the top nav to show the new default model
+      await renderModelsForCurrentProvider()
       updateTopNavModel()
       
+      return true
+      
     } catch (error) {
-      console.error('Failed to store API key:', error)
-      console.error('Error details:', error.stack)
-      showNotification('Failed to save API key. Please try again.', 'error')
-      saveBtn.textContent = originalText
-      saveBtn.disabled = false
+      console.error('Save API key failed:', error)
+      showNotification(`Failed to save API key: ${error.message}`, 'error')
+      
+      // Reset button state
+      const saveBtn = apiKeyContainer.querySelector('.btn-primary')
+      if (saveBtn) {
+        saveBtn.textContent = 'Save'
+        saveBtn.disabled = false
+      }
+      
+      return false
     }
+  }
+
+  // Simplified remove API key function
+  async function removeApiKey(keyName) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.remove([
+        `encrypted_${keyName}`,
+        `key_timestamp_${keyName}`
+      ], () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else {
+          resolve(true)
+        }
+      })
+    })
   }
 
   window.removeApiKey = async function(providerId) {
@@ -397,12 +471,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     try {
-      await keyManager.removeApiKey(provider.keyName)
+      await removeApiKey(provider.keyName)
       showNotification(`🗑️ ${provider.name} API key removed successfully`, 'success')
       
       // Update UI
       await renderApiKeySection()
       await updateTabIndicators()
+      await renderModelsForCurrentProvider()
       
       // If current default model uses this provider, reset to gemini-flash-2.5
       const defaultModel = getDefaultModel()
@@ -516,10 +591,10 @@ document.addEventListener("DOMContentLoaded", () => {
         let hasFoundProviderWithoutKey = false
         for (const providerId of Object.keys(providers)) {
           const provider = providers[providerId]
-          const hasKey = await keyManager.hasApiKey(provider.keyName)
+          const hasKey = await hasApiKey(provider.keyName)
           if (!hasKey && !hasFoundProviderWithoutKey) {
             currentProvider = providerId
-            switchTab(providerId)
+            await switchTab(providerId)
             hasFoundProviderWithoutKey = true
             break
           }
@@ -528,7 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // If all providers have keys or none found, default to openai
         if (!hasFoundProviderWithoutKey) {
           currentProvider = 'openai'
-          switchTab('openai')
+          await switchTab('openai')
         }
         
         updateSummarizeSection()
@@ -661,7 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Only require API key for non-system models
     if (provider && provider.keyName && !defaultModel.isSystemDefault) {
-      apiKey = await keyManager.getApiKey(provider.keyName)
+      apiKey = await getApiKey(provider.keyName)
       if (!apiKey) {
         showNotification(`API key required for ${defaultModel.name}`, 'error')
         return

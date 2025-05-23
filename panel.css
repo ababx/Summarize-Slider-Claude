@@ -493,6 +493,13 @@
   display: none;
 }
 
+.set-default-btn.disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Panel Content */
 .panel-content {
   padding: 16px;
