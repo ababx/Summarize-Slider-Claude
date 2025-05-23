@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const sliderThumb = document.getElementById("sliderThumb")
   
   // New shadcn-style elements
+  const modelSelectorBtn = document.getElementById("modelSelectorBtn")
+  const currentModelName = document.getElementById("currentModelName")
+  const modelSelectorCard = document.getElementById("modelSelectorCard")
   const tabsList = document.getElementById("tabsList")
   const apiKeyContainer = document.getElementById("apiKeyContainer")
   const modelsList = document.getElementById("modelsList")
@@ -28,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentProvider = "openai"
   let currentTabId = null
   let summarizeUsage = 0
-  let summarizeDefault = "perplexity-sonar"
+  let summarizeDefault = "gemini-flash-2.5"
   
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
@@ -62,10 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Models data (matching your React component)
+  // Models data (Gemini Flash as default, separate from user API keys)
   const models = [
+    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true },
     { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity" },
-    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true },
     { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google" },
     { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic" },
     { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic" },
@@ -223,8 +226,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const defaultModel = models.find(m => m.id === summarizeDefault)
     defaultModelName.textContent = defaultModel ? defaultModel.name : 'Unknown Model'
     
+    // Update current model name in header
+    currentModelName.textContent = defaultModel ? defaultModel.name : 'Unknown Model'
+    
     // Show/hide reset button and custom indicator
-    if (summarizeDefault !== 'perplexity-sonar') {
+    if (summarizeDefault !== 'gemini-flash-2.5') {
       resetBtn.classList.remove('hidden')
       customIndicator.classList.remove('hidden')
     } else {
@@ -235,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Reset summarize default
   function resetSummarizeDefault() {
-    setAsDefault('perplexity-sonar')
+    setAsDefault('gemini-flash-2.5')
   }
 
   // Global functions for API key management
@@ -303,10 +309,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showNotification(`${provider.name} API key removed`, 'success')
       renderApiKeySection()
       
-      // If current default model uses this provider, reset to perplexity-sonar
+      // If current default model uses this provider, reset to gemini-flash-2.5
       const defaultModel = getDefaultModel()
       if (defaultModel && defaultModel.provider === providerId) {
-        setAsDefault('perplexity-sonar')
+        setAsDefault('gemini-flash-2.5')
       }
       
     } catch (error) {
@@ -322,6 +328,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Setup reset button
   resetBtn.addEventListener('click', resetSummarizeDefault)
+  
+  // Setup model selector button
+  modelSelectorBtn.addEventListener('click', () => {
+    const isVisible = !modelSelectorCard.classList.contains('hidden')
+    if (isVisible) {
+      modelSelectorCard.classList.add('hidden')
+    } else {
+      modelSelectorCard.classList.remove('hidden')
+    }
+  })
 
   // Check if chrome is defined, if not, define it as an empty object with required methods
   if (typeof chrome === "undefined") {
@@ -500,9 +516,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const provider = providers[defaultModel.provider]
     let apiKey = null
     
-    if (provider && provider.keyName) {
+    // Only require API key for non-system models
+    if (provider && provider.keyName && !defaultModel.isSystemDefault) {
       apiKey = await keyManager.getApiKey(provider.keyName)
-      if (!apiKey && defaultModel.id !== 'perplexity-sonar') {
+      if (!apiKey) {
         showNotification(`API key required for ${defaultModel.name}`, 'error')
         return
       }

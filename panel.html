@@ -7,11 +7,21 @@
   <div class="summarizer-panel">
     <div class="panel-header">
       <h1 class="panel-title">Summarize Slider</h1>
-      <button id="closePanel" class="close-button">&times;</button>
+      <div class="header-actions">
+        <button id="modelSelectorBtn" class="model-selector-btn" title="Select Model">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3a6.364 6.364 0 0 0-9 9 6.364 6.364 0 0 0 9 9 6.364 6.364 0 0 0 9-9 6.364 6.364 0 0 0-9-9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span id="currentModelName">Gemini Flash 2.5</span>
+        </button>
+        <button id="closePanel" class="close-button">&times;</button>
+      </div>
     </div>
 
-    <!-- Model Selector Card ---->
-    <div class="model-selector-card">
+    <!-- Model Selector Card (Hidden by default) -->
+    <div class="model-selector-card hidden" id="modelSelectorCard">
       <div class="card-content">
         <!-- Provider Tabs -->
         <div class="tabs-container">
@@ -66,7 +76,7 @@
               <span class="summarize-title">Summarize Slider</span>
               <div class="usage-badge" id="usageBadge">0/25 used</div>
             </div>
-            <button class="reset-btn hidden" id="resetBtn" title="Reset to Perplexity Sonar">
+            <button class="reset-btn hidden" id="resetBtn" title="Reset to Gemini Flash">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -76,7 +86,7 @@
             </button>
           </div>
           <div class="summarize-default">
-            <span class="default-label">Default: <span id="defaultModelName">Perplexity Sonar</span></span>
+            <span class="default-label">Default: <span id="defaultModelName">Gemini Flash 2.5</span></span>
             <span class="custom-indicator hidden" id="customIndicator">Using custom default</span>
           </div>
         </div>
@@ -129,6 +139,13 @@
       </div>
       
       <div class="bottom-border"></div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="panel-footer">
+      <div class="footer-content">
+        <span class="footer-text">Powered by Gemini Flash 2.5 • <a href="#" class="footer-link">Built with Claude Code</a></span>
+      </div>
     </div>
   </div>
 

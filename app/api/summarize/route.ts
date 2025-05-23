@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
 
     // Model configuration mapping
     const modelMapping = {
+      "gemini-flash-2.5": { providerName: "google", model: "gemini-2.0-flash-exp", requiresApiKey: false, useSystemKey: true },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
       "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
       "openai-o3": { providerName: "openai", model: "o3", requiresApiKey: true },
@@ -150,7 +151,15 @@ export async function POST(req: NextRequest) {
     try {
       console.log("Using direct API call for:", selectedModel.model, "provider:", selectedModel.providerName)
       
-      if (!apiKey) {
+      // Handle system key vs user key
+      let effectiveApiKey = apiKey
+      if (selectedModel.useSystemKey) {
+        // Use system environment variable for Gemini Flash
+        effectiveApiKey = process.env.GOOGLE_API_KEY
+        if (!effectiveApiKey) {
+          return NextResponse.json({ error: "System API key not configured" }, { status: 500 })
+        }
+      } else if (!apiKey) {
         return NextResponse.json({ error: "API key required for this model" }, { status: 400 })
       }
 
@@ -162,7 +171,7 @@ export async function POST(req: NextRequest) {
           apiResponse = await fetch(`${openaiBaseURL}/chat/completions`, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": `Bearer ${effectiveApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -175,7 +184,7 @@ export async function POST(req: NextRequest) {
           break
           
         case "google":
-          apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.model}:generateContent?key=${apiKey}`, {
+          apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel.model}:generateContent?key=${effectiveApiKey}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -191,7 +200,7 @@ export async function POST(req: NextRequest) {
           apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": `Bearer ${effectiveApiKey}`,
               "Content-Type": "application/json",
               "anthropic-version": "2023-06-01"
             },
@@ -207,7 +216,7 @@ export async function POST(req: NextRequest) {
           apiResponse = await fetch("https://api.perplexity.ai/chat/completions", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": `Bearer ${effectiveApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -223,7 +232,7 @@ export async function POST(req: NextRequest) {
           apiResponse = await fetch(`${selectedModel.baseURL}/chat/completions`, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": `Bearer ${effectiveApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
