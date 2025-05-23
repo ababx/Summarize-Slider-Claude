@@ -1,12 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { perplexity } from "@ai-sdk/perplexity"
 import { generateText } from "ai"
 
-// Lazy import AI providers to avoid initialization issues
-async function getPerplexity() {
-  const { perplexity } = await import("@ai-sdk/perplexity")
-  return perplexity
-}
-
+// Lazy import other AI providers to avoid initialization issues
 async function getOpenAI() {
   const { openai } = await import("@ai-sdk/openai")
   return openai
@@ -69,14 +65,19 @@ export async function POST(req: NextRequest) {
         }
 
         // Use the Perplexity Sonar API to generate a summary
-        const perplexity = await getPerplexity()
         const perplexityApiKey = process.env.PERPLEXITY_API_KEY
         
         if (!perplexityApiKey) {
           throw new Error("PERPLEXITY_API_KEY environment variable is not set")
         }
         
-        const perplexityProvider = perplexity({ apiKey: perplexityApiKey })
+        console.log("Using Perplexity API key from environment")
+        
+        // Configure Perplexity with API key
+        const perplexityProvider = perplexity({
+          apiKey: perplexityApiKey
+        })
+        
         const result = await generateText({
           model: perplexityProvider("sonar-pro"),
           prompt,
@@ -143,7 +144,6 @@ export async function POST(req: NextRequest) {
           break
           
         case "perplexity":
-          const perplexity = await getPerplexity()
           const perplexityProvider = perplexity({ apiKey: apiKey })
           configuredModel = perplexityProvider(selectedModel.model)
           break
