@@ -5,6 +5,15 @@ import { google } from "@ai-sdk/google"
 import { anthropic } from "@ai-sdk/anthropic"
 import { generateText } from "ai"
 
+export async function GET() {
+  return NextResponse.json({ 
+    message: "Summarize API is working", 
+    timestamp: new Date().toISOString(),
+    supportedMethods: ["POST"],
+    supportedModels: ["default", "openai-gpt-4o", "anthropic-claude-3.5-sonnet", "google-gemini-pro", "x-grok-beta", "perplexity-sonar"]
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { text, url, complexity = "standard", model, apiKey } = await req.json()
