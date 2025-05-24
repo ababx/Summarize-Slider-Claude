@@ -143,14 +143,14 @@ export async function POST(req: NextRequest) {
       // Use default prompts
       switch (complexity) {
         case "eli5":
-          prompt = `Summarize the following content from ${url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and organize information using bullet points. Focus on the main points, key takeaways, and why this information matters. Do not include introductory phrases - start directly with the summary content:\n\n${text}`
+          prompt = `Create a brief, simple summary of the content from ${url} in language a 10-year-old would understand. Keep it short and focus only on the most important points. Use simple words and short sentences. Do not include introductory phrases - start directly with the summary:\n\n${text}`
           break
         case "phd":
-          prompt = `Provide a sophisticated, insightful analysis and summary of the following content from ${url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Structure your response with clear bullet points and subheadings. Do not include introductory phrases - start directly with the analysis:\n\n${text}`
+          prompt = `Provide a comprehensive, analytical summary of the content from ${url}. Include detailed insights, implications, technical context, and critical analysis. Use structured formatting with bullet points and subheadings to organize complex information. Maintain scholarly depth while being accessible. Do not include introductory phrases - start directly with the analysis:\n\n${text}`
           break
         case "standard":
         default:
-          prompt = `Provide an insightful, comprehensive summary of the following content from ${url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Format your response with clear bullet points and subheadings where appropriate. Do not include introductory phrases - start directly with the summary content:\n\n${text}`
+          prompt = `Summarize the content from ${url} in a clear, organized way using bullet points. Cover the main topics and key insights that would be valuable to most readers. Keep it concise but informative. Do not include introductory phrases - start directly with the summary:\n\n${text}`
           break
       }
     }
@@ -159,12 +159,12 @@ export async function POST(req: NextRequest) {
     const getDefaultTokenLimit = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 3000  // Shorter, simpler summaries
+          return 800   // Short and simple
         case "phd":
-          return 6000  // Longer, more detailed expert summaries
+          return 4000  // Long and detailed
         case "standard":
         default:
-          return 4000  // Standard length
+          return 2000  // Medium length with bullets
       }
     }
 

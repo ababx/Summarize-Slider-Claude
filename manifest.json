@@ -23,7 +23,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["panel.html", "panel.js", "panel.css", "icons/*"],
+      "resources": ["panel.html", "panel.js", "panel-test.js", "panel.css", "icons/*", "lib/*"],
       "matches": ["<all_urls>"]
     }
   ]

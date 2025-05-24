@@ -14,6 +14,13 @@
         <div class="current-model">Gemini Flash 2.5</div>
       </div>
       <div class="header-actions">
+        <button id="promptsBtn" class="prompts-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Prompts
+        </button>
         <button id="modelSelectorBtn" class="model-selector-btn">
           <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clip-path="url(#clip0_22843_178)">
@@ -27,7 +34,7 @@
               </clipPath>
             </defs>
           </svg>
-          Choose Model & Add Keys
+          Pick Models
         </button>
         <button id="closePanel" class="close-button">&times;</button>
       </div>
@@ -37,7 +44,7 @@
     <div class="model-selector-overlay hidden" id="modelSelectorOverlay">
       <div class="model-selector-popup">
         <div class="popup-header">
-          <h2 class="popup-title">Choose Model & Add Keys</h2>
+          <h2 class="popup-title">Pick Models</h2>
           <button id="closeModelSelector" class="popup-close">&times;</button>
         </div>
         <div class="card-content">
@@ -128,13 +135,6 @@
             <div class="slider-label-group" data-value="2">
               <div class="slider-label">Expert Level</div>
               <div class="slider-sublabel">Deep-dive</div>
-              <button class="edit-prompts-btn" title="Edit all prompts">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span class="edit-text">Edit Prompts</span>
-              </button>
             </div>
           </div>
         </div>
@@ -174,7 +174,7 @@
               <div class="prompt-controls">
                 <div class="token-limit-control">
                   <label class="token-label">Tokens:</label>
-                  <input type="number" id="eli5TokenLimit" class="token-input" min="100" max="10000" value="3000">
+                  <input type="number" id="eli5TokenLimit" class="token-input" min="100" max="10000" value="800">
                 </div>
                 <button class="btn-reset-individual" data-prompt="eli5" title="Reset ELI5 to default">Reset to Default</button>
               </div>
@@ -187,7 +187,7 @@
               <div class="prompt-controls">
                 <div class="token-limit-control">
                   <label class="token-label">Tokens:</label>
-                  <input type="number" id="standardTokenLimit" class="token-input" min="100" max="10000" value="4000">
+                  <input type="number" id="standardTokenLimit" class="token-input" min="100" max="10000" value="2000">
                 </div>
                 <button class="btn-reset-individual" data-prompt="standard" title="Reset Standard to default">Reset to Default</button>
               </div>
@@ -200,7 +200,7 @@
               <div class="prompt-controls">
                 <div class="token-limit-control">
                   <label class="token-label">Tokens:</label>
-                  <input type="number" id="phdTokenLimit" class="token-input" min="100" max="10000" value="6000">
+                  <input type="number" id="phdTokenLimit" class="token-input" min="100" max="10000" value="4000">
                 </div>
                 <button class="btn-reset-individual" data-prompt="phd" title="Reset Expert Level to default">Reset to Default</button>
               </div>

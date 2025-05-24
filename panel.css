@@ -63,6 +63,7 @@
   margin: 0;
 }
 
+.prompts-btn,
 .model-selector-btn {
   display: flex;
   align-items: center;
@@ -78,11 +79,13 @@
   transition: all 0.2s ease;
 }
 
+.prompts-btn:hover,
 .model-selector-btn:hover {
   background: #f3f4f6;
   border-color: #d1d5db;
 }
 
+.prompts-btn svg,
 .model-selector-btn svg {
   color: #6b7280;
   flex-shrink: 0;
@@ -645,7 +648,7 @@
   font-size: 16px;
   font-weight: 600;
   color: #111827;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .slider-sublabel {
@@ -667,13 +670,16 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
 }
 
 .usage-counter {
-  font-size: 14px;
+  position: absolute;
+  right: 24px;
+  font-size: 12px;
   font-weight: 400;
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 .button:hover {
@@ -832,75 +838,6 @@
   background: #a1a1a1;
 }
 
-/* Hover-Expandable Edit Prompts Button */
-.edit-prompts-btn {
-  position: absolute;
-  right: -16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: white;
-  border: 1px solid #d1d5db;
-  border-right: none;
-  border-radius: 20px 0 0 20px;
-  padding: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  overflow: hidden;
-  width: 40px;
-  height: 40px;
-  justify-content: center;
-}
-
-.edit-prompts-btn svg {
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  transition: transform 0.3s ease;
-}
-
-.edit-prompts-btn .edit-text {
-  opacity: 0;
-  width: 0;
-  transform: translateX(-10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 13px;
-  font-weight: 500;
-  overflow: hidden;
-}
-
-.edit-prompts-btn:hover {
-  width: 130px;
-  border-radius: 20px 0 0 20px;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-right: none;
-  padding: 8px 12px 8px 16px;
-  justify-content: flex-start;
-  gap: 6px;
-}
-
-.edit-prompts-btn:hover .edit-text {
-  opacity: 1;
-  width: auto;
-  transform: translateX(0);
-}
-
-.edit-prompts-btn:hover svg {
-  transform: scale(1.1);
-}
-
-/* Position the last slider group relatively for absolute positioning */
-.slider-label-group:last-child {
-  position: relative;
-}
 
 /* Prompt Editor Overlay */
 .prompt-editor-overlay {

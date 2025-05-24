@@ -1,12 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
+  
   // Initialize security managers
   console.log('Initializing KeyManager and ContentSecurity...')
-  const keyManager = new KeyManager()
-  const contentSecurity = new ContentSecurity()
-  console.log('KeyManager:', keyManager)
-  console.log('ContentSecurity:', contentSecurity)
+  let keyManager, contentSecurity
+  try {
+    keyManager = new KeyManager()
+    contentSecurity = new ContentSecurity()
+    console.log('KeyManager:', keyManager)
+    console.log('ContentSecurity:', contentSecurity)
+  } catch (error) {
+    console.error("Error initializing security managers:", error)
+    keyManager = null
+    contentSecurity = null
+  }
   
   // Basic panel elements
+  console.log("Selecting panel elements...")
   const summarizeBtn = document.getElementById("summarizeBtn")
   const loadingIndicator = document.getElementById("loadingIndicator")
   const summaryContainer = document.getElementById("summaryContainer")
@@ -18,7 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeButton = document.getElementById("closePanel")
   const sliderThumb = document.getElementById("sliderThumb")
   
+  
   // New shadcn-style elements
+  const promptsBtn = document.getElementById("promptsBtn")
   const modelSelectorBtn = document.getElementById("modelSelectorBtn")
   const modelSelectorOverlay = document.getElementById("modelSelectorOverlay")
   const closeModelSelector = document.getElementById("closeModelSelector")
@@ -48,9 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Default prompts
   const defaultPrompts = {
-    eli5: "Summarize the following content from {url} in simple, clear language that anyone can understand. Use short sentences, avoid jargon, and organize information using bullet points. Focus on the main points, key takeaways, and why this information matters. Do not include introductory phrases - start directly with the summary content:",
-    standard: "Provide an insightful, comprehensive summary of the following content from {url} for a general audience. Go beyond basic facts to highlight key insights, implications, and what makes this content valuable. Format your response with clear bullet points and subheadings where appropriate. Do not include introductory phrases - start directly with the summary content:",
-    phd: "Provide a sophisticated, insightful analysis and summary of the following content from {url}. Include technical terminology where appropriate, maintain scholarly tone, and offer deep insights, nuanced analysis, and critical evaluation of the content's significance and implications. Structure your response with clear bullet points and subheadings. Do not include introductory phrases - start directly with the analysis:"
+    eli5: "Create a brief, simple summary of the content from {url} in language a 10-year-old would understand. Keep it short and focus only on the most important points. Use simple words and short sentences. Do not include introductory phrases - start directly with the summary:",
+    standard: "Summarize the content from {url} in a clear, organized way using bullet points. Cover the main topics and key insights that would be valuable to most readers. Keep it concise but informative. Do not include introductory phrases - start directly with the summary:",
+    phd: "Provide a comprehensive, analytical summary of the content from {url}. Include detailed insights, implications, technical context, and critical analysis. Use structured formatting with bullet points and subheadings to organize complex information. Maintain scholarly depth while being accessible. Do not include introductory phrases - start directly with the analysis:"
   }
 
   // Custom prompts (loaded from storage)
@@ -58,9 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Default token limits
   const defaultTokenLimits = {
-    eli5: 3000,
-    standard: 4000,
-    phd: 6000
+    eli5: 800,     // Short and simple
+    standard: 2000, // Medium length with bullets
+    phd: 4000      // Long and detailed
   }
 
   // Custom token limits (loaded from storage)
@@ -935,15 +946,14 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     })
 
-    // Add event listeners for edit prompt buttons - use more specific targeting
-    document.querySelectorAll('.edit-prompt-btn, .edit-prompts-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        console.log('Edit button clicked directly:', e.target)
+    // Add event listener for prompts button
+    if (promptsBtn) {
+      promptsBtn.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         openPromptEditor()
       })
-    })
+    }
 
     // Close prompt editor when clicking outside
     if (promptEditorOverlay) {
@@ -967,26 +977,37 @@ document.addEventListener("DOMContentLoaded", () => {
       // Load saved data
       chrome.storage.local.get([
         `summary_${currentTabId}`, 
+        `summary_eli5_${currentTabId}`,
+        `summary_standard_${currentTabId}`,
+        `summary_phd_${currentTabId}`,
         `complexity_${currentTabId}`, 
         `model_${currentTabId}`,
         'summarizeUsage',
         'summarizeDefault'
       ], async (result) => {
-        // Load summary
-        if (result[`summary_${currentTabId}`]) {
-          renderMarkdown(result[`summary_${currentTabId}`])
-          summaryContainer.classList.remove("hidden")
-        }
-
-        // Load complexity
+        // Load complexity first, then summary for that complexity
         if (result[`complexity_${currentTabId}`] !== undefined) {
           complexitySlider.value = result[`complexity_${currentTabId}`]
-          updateSliderThumbPosition(complexitySlider.value)
-          updateComplexityLabel()
         } else {
-          updateSliderThumbPosition(1)
-          updateComplexityLabel()
+          complexitySlider.value = 1 // default to standard
         }
+        
+        // Update slider position and label
+        updateSliderThumbPosition(complexitySlider.value)
+        updateComplexityLabel()
+        
+        // Load summary for the current complexity level
+        loadSummaryForCurrentComplexity()
+        
+        // Fallback: if no complexity-specific summary exists, try old format
+        setTimeout(() => {
+          if (summaryContainer.classList.contains("hidden")) {
+            if (result[`summary_${currentTabId}`]) {
+              renderMarkdown(result[`summary_${currentTabId}`])
+              summaryContainer.classList.remove("hidden")
+            }
+          }
+        }, 100)
 
         // Load usage and default
         summarizeUsage = result.summarizeUsage || 0
@@ -1057,21 +1078,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Function to update complexity label
   function updateComplexityLabel() {
+    if (!complexitySlider) return
+    
     const complexityLevel = complexityLevels[complexitySlider.value]
     const complexityLabel = document.getElementById("complexityLabel")
+    
     if (complexityLabel) {
       complexityLabel.textContent = complexityLabels[complexityLevel]
     }
   }
 
+  // Function to load and display summary for current complexity level
+  function loadSummaryForCurrentComplexity() {
+    if (!currentTabId) return
+    
+    const complexityLevel = complexityLevels[complexitySlider.value]
+    const storageKey = `summary_${complexityLevel}_${currentTabId}`
+    
+    chrome.storage.local.get([storageKey], (result) => {
+      if (result[storageKey]) {
+        renderMarkdown(result[storageKey])
+        summaryContainer.classList.remove("hidden")
+        errorContainer.classList.add("hidden")
+      } else {
+        // No summary available for this complexity level
+        summaryContainer.classList.add("hidden")
+        errorContainer.classList.add("hidden")
+      }
+      
+      // Update slider position after content changes (scrollbar might appear/disappear)
+      setTimeout(() => {
+        updateSliderThumbPosition(complexitySlider.value)
+      }, 50)
+    })
+  }
+
   // Function to update slider thumb position
   function updateSliderThumbPosition(value) {
     const sliderContainer = document.querySelector(".slider-container")
+    
+    if (!sliderContainer || !sliderThumb) return
+    
+    // Force a reflow to get accurate measurements
+    sliderContainer.offsetHeight
+    
     const containerWidth = sliderContainer.offsetWidth
     const thumbWidth = 36
     const leftPadding = 8
     const rightPadding = 8
-    const availableWidth = containerWidth - leftPadding - rightPadding - thumbWidth
+    
+    // Ensure we have a minimum width to prevent issues
+    const minContainerWidth = thumbWidth + leftPadding + rightPadding + 20
+    const effectiveContainerWidth = Math.max(containerWidth, minContainerWidth)
+    const availableWidth = effectiveContainerWidth - leftPadding - rightPadding - thumbWidth
 
     let leftPosition
     if (value == 0) {
@@ -1079,8 +1138,11 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (value == 1) {
       leftPosition = leftPadding + availableWidth / 2
     } else {
-      leftPosition = containerWidth - rightPadding - thumbWidth
+      leftPosition = effectiveContainerWidth - rightPadding - thumbWidth
     }
+
+    // Clamp position to stay within bounds
+    leftPosition = Math.max(leftPadding, Math.min(leftPosition, effectiveContainerWidth - rightPadding - thumbWidth))
 
     sliderThumb.style.left = `${leftPosition}px`
   }
@@ -1088,21 +1150,50 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to render Markdown
   function renderMarkdown(text) {
     let html = text
-      .replace(/^### (.*$)/gim, "<h3>$1</h3>")
-      .replace(/^## (.*$)/gim, "<h2>$1</h2>") 
-      .replace(/^# (.*$)/gim, "<h1>$1</h1>")
-      .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/gim, "<em>$1</em>")
-      .replace(/^\* (.*$)/gim, "<ul><li>$1</li></ul>")
-      .replace(/^- (.*$)/gim, "<ul><li>$1</li></ul>")
-      .replace(/<\/ul>\s*<ul>/gim, "")
-      .replace(/\n\s*\n/gim, "</p><p>")
+    
+    // First handle code blocks to protect them from other replacements
+    html = html.replace(/```([\s\S]*?)```/gim, "<pre><code>$1</code></pre>")
+    html = html.replace(/`(.*?)`/gim, "<code>$1</code>")
+    
+    // Handle headers
+    html = html.replace(/^### (.*$)/gim, "<h3>$1</h3>")
+    html = html.replace(/^## (.*$)/gim, "<h2>$1</h2>") 
+    html = html.replace(/^# (.*$)/gim, "<h1>$1</h1>")
+    
+    // Handle bold and italic formatting (order matters - triple asterisks first)
+    html = html.replace(/\*\*\*(.*?)\*\*\*/gim, "<strong><em>$1</em></strong>")
+    html = html.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>")
+    html = html.replace(/\*((?![*\s]).*?(?<![*\s]))\*/gim, "<em>$1</em>")
+    
+    // Handle bullet points (only at start of line with space after asterisk/dash)
+    html = html.replace(/^[\*\-]\s+(.+)$/gim, "<li>$1</li>")
+    
+    // Handle numbered lists
+    html = html.replace(/^\d+\.\s+(.+)$/gim, "<li>$1</li>")
+    
+    // Wrap consecutive list items in ul tags
+    html = html.replace(/(<li>.*?<\/li>)(\s*<li>.*?<\/li>)*/gim, function(match) {
+      return "<ul>" + match + "</ul>"
+    })
+    
+    // Handle line breaks and paragraphs
+    html = html.replace(/\n\n+/gim, "</p><p>")
+    html = html.replace(/\n/gim, "<br>")
 
-    if (!html.startsWith("<h") && !html.startsWith("<p>")) {
+    // Clean up any remaining asterisks that weren't processed
+    html = html.replace(/(?<!\w)\*(?!\*)/g, "")
+
+    // Wrap in paragraphs if needed
+    if (!html.includes("<h") && !html.includes("<ul") && !html.includes("<ol") && !html.includes("<p>")) {
       html = "<p>" + html + "</p>"
     }
 
     summaryContent.innerHTML = html
+    
+    // Update slider position after content is rendered (in case scrollbar appears)
+    setTimeout(() => {
+      updateSliderThumbPosition(complexitySlider.value)
+    }, 100)
   }
 
   // Show notification
@@ -1156,24 +1247,39 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Make labels clickable
-  sliderLabelGroups.forEach((group) => {
-    group.addEventListener("click", () => {
-      const value = Number.parseInt(group.getAttribute("data-value"))
-      complexitySlider.value = value
-      updateSliderThumbPosition(value)
-      updateComplexityLabel()
+  if (sliderLabelGroups && sliderLabelGroups.length > 0) {
+    sliderLabelGroups.forEach((group) => {
+      group.addEventListener("click", () => {
+        const value = Number.parseInt(group.getAttribute("data-value"))
+        if (complexitySlider) {
+          complexitySlider.value = value
+        }
+        updateSliderThumbPosition(value)
+        updateComplexityLabel()
+        loadSummaryForCurrentComplexity()
 
-      if (currentTabId) {
-        chrome.storage.local.set({ [`complexity_${currentTabId}`]: value })
-      }
+        if (currentTabId) {
+          chrome.storage.local.set({ [`complexity_${currentTabId}`]: value })
+        }
+      })
     })
-  })
+  }
 
   // Update thumb position when slider value changes
-  complexitySlider.addEventListener("input", () => {
-    updateSliderThumbPosition(complexitySlider.value)
-    updateComplexityLabel()
-  })
+  if (complexitySlider) {
+    complexitySlider.addEventListener("input", () => {
+      updateSliderThumbPosition(complexitySlider.value)
+      updateComplexityLabel()
+      loadSummaryForCurrentComplexity()
+    })
+    
+    // Also add change event as fallback
+    complexitySlider.addEventListener("change", () => {
+      updateSliderThumbPosition(complexitySlider.value)
+      updateComplexityLabel()
+      loadSummaryForCurrentComplexity()
+    })
+  }
 
   // Close panel
   closeButton.addEventListener("click", () => {
@@ -1253,10 +1359,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderMarkdown(event.data.summary)
         summaryContainer.classList.remove("hidden")
 
+        // Save summary with complexity level
+        const complexityLevel = complexityLevels[complexitySlider.value]
         if (event.data.tabId) {
-          chrome.storage.local.set({ [`summary_${event.data.tabId}`]: event.data.summary })
+          chrome.storage.local.set({ [`summary_${complexityLevel}_${event.data.tabId}`]: event.data.summary })
         } else if (currentTabId) {
-          chrome.storage.local.set({ [`summary_${currentTabId}`]: event.data.summary })
+          chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: event.data.summary })
         }
       }
 
@@ -1289,9 +1397,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Initialize slider position and handle resize
-  updateSliderThumbPosition(complexitySlider.value)
-  updateComplexityLabel()
+  if (complexitySlider && sliderThumb) {
+    updateSliderThumbPosition(complexitySlider.value)
+    updateComplexityLabel()
+    loadSummaryForCurrentComplexity()
+  }
+  
+  // Add resize observer for more robust positioning
+  if (window.ResizeObserver) {
+    const resizeObserver = new ResizeObserver(() => {
+      updateSliderThumbPosition(complexitySlider.value)
+    })
+    
+    const sliderContainer = document.querySelector(".slider-container")
+    if (sliderContainer) {
+      resizeObserver.observe(sliderContainer)
+    }
+    
+    // Also observe the main panel content
+    const panelContent = document.querySelector(".panel-content")
+    if (panelContent) {
+      resizeObserver.observe(panelContent)
+    }
+  }
+  
+  // Fallback for older browsers
   window.addEventListener("resize", () => {
     updateSliderThumbPosition(complexitySlider.value)
   })
+  
+  // Also watch for content changes that might affect layout
+  if (summaryContainer) {
+    const observer = new MutationObserver(() => {
+      setTimeout(() => {
+        updateSliderThumbPosition(complexitySlider.value)
+      }, 50)
+    })
+    
+    observer.observe(summaryContainer, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+    })
+  }
 })
