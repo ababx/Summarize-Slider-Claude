@@ -30,7 +30,7 @@ if (!document.getElementById("summarizer-panel-container")) {
     position: fixed;
     top: 0;
     right: 0;
-    width: 500px;
+    width: 560px;
     height: 100vh;
     border: none;
     z-index: 2147483647;
