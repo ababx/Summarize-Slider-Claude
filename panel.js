@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
   ]
 
-  // Get models for a specific provider (exclude system defaults)
+  // Get models for a specific provider (exclude system defaults from provider lists)
   function getModelsForProvider(providerId) {
     return models.filter(model => model.provider === providerId && !model.isSystemDefault)
   }
@@ -173,7 +173,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function hasApiKey(keyName) {
     return new Promise((resolve) => {
       chrome.storage.local.get([`encrypted_${keyName}`], (result) => {
-        resolve(!!result[`encrypted_${keyName}`])
+        const hasKey = !!result[`encrypted_${keyName}`]
+        console.log(`hasApiKey(${keyName}):`, hasKey, result[`encrypted_${keyName}`] ? 'exists' : 'not found')
+        resolve(hasKey)
       })
     })
   }
@@ -384,10 +386,17 @@ document.addEventListener("DOMContentLoaded", () => {
     modelsList.innerHTML = providerModels.map(model => {
       const isDisabled = !providerHasKey && !model.isSystemDefault
       const buttonClass = isDisabled ? 'btn-small btn-ghost set-default-btn disabled' : 'btn-small btn-ghost set-default-btn'
-      const buttonText = isDisabled ? 'API key required' : 'Use this'
       
-      // Determine if this model is active (selected as default and provider has API key)
-      // System default models (like Gemini Flash) are always considered active when selected
+      // Different button text for system default vs user API key models
+      let buttonText = 'Use this'
+      if (isDisabled) {
+        buttonText = 'API key required'
+      } else if (model.isSystemDefault) {
+        buttonText = 'Use this (25/month)'
+      }
+      
+      // Determine if this model is active (selected as default and available)
+      // System default models are always available, user models need API keys
       const modelHasKey = model.isSystemDefault || providerKeys[model.provider]
       const isActiveModel = model.isDefault && modelHasKey
       
@@ -397,18 +406,24 @@ document.addEventListener("DOMContentLoaded", () => {
         cardClasses.push('default') // Blue border when default but no API key
       }
       if (isActiveModel) {
-        cardClasses.push('active') // Green background when default and has API key/is system
+        cardClasses.push('active') // Green background when default and available
       }
+      
+      // System default models get special treatment
+      const modelDescription = model.isSystemDefault ? 
+        '<div class="model-description">System default - uses Vercel environment keys</div>' : 
+        ''
       
       return `
         <div class="model-card ${cardClasses.join(' ')}">
           <div class="model-card-header">
             <div class="model-info">
-              <span class="model-name">${model.name}</span>
+              <span class="model-name">${model.name}${model.isSystemDefault ? ' (System)' : ''}</span>
               ${model.isDefault ? '<span class="default-badge">Default</span>' : ''}
             </div>
             ${!model.isDefault ? `<button class="${buttonClass}" data-model-id="${model.id}" ${isDisabled ? 'disabled' : ''}>${buttonText}</button>` : ''}
           </div>
+          ${modelDescription}
         </div>
       `
     }).join('')
@@ -429,15 +444,38 @@ document.addEventListener("DOMContentLoaded", () => {
   // Update summarize section
   async function updateSummarizeSection() {
     const defaultModel = models.find(m => m.id === summarizeDefault)
+    if (!defaultModel) {
+      console.error('No default model found for ID:', summarizeDefault)
+      return
+    }
+    
     const provider = providers[defaultModel.provider]
+    if (!provider) {
+      console.error('No provider found for model:', defaultModel)
+      return
+    }
+    
     const hasUserApiKey = await hasApiKey(provider.keyName)
-    const isUsingSystemDefault = defaultModel.isSystemDefault && !hasUserApiKey
+    const isUsingSystemDefault = defaultModel.isSystemDefault
+    
+    console.log('=== updateSummarizeSection DEBUG ===')
+    console.log('Default model ID:', summarizeDefault)
+    console.log('Default model object:', defaultModel)
+    console.log('Provider:', provider)
+    console.log('Provider key name:', provider.keyName)
+    console.log('Has user API key:', hasUserApiKey)
+    console.log('Model isSystemDefault:', defaultModel.isSystemDefault)
+    console.log('Calculated isUsingSystemDefault:', isUsingSystemDefault)
+    console.log('Current usage:', summarizeUsage)
+    console.log('===================================')
     
     // Only show usage counter when using system default WITHOUT user's API key
     if (isUsingSystemDefault) {
       usageCounter.textContent = `${summarizeUsage}/25 Monthly`
+      console.log('Setting usage counter to:', `${summarizeUsage}/25 Monthly`)
     } else {
       usageCounter.textContent = 'Unlimited'
+      console.log('Setting usage counter to: Unlimited')
     }
     
     // Footer always shows current usage regardless of which model is being used
@@ -1013,6 +1051,12 @@ document.addEventListener("DOMContentLoaded", () => {
         summarizeUsage = result.summarizeUsage || 0
         summarizeDefault = result.summarizeDefault || 'gemini-flash-2.5'
         
+        console.log('=== INITIAL LOAD DEBUG ===')
+        console.log('Loaded summarizeUsage:', summarizeUsage)
+        console.log('Loaded summarizeDefault:', summarizeDefault)
+        console.log('Default model object:', models.find(m => m.id === summarizeDefault))
+        console.log('============================')
+        
         // Set the saved default (always ensure it's valid)
         if (result.summarizeDefault) {
           // Check if the saved model still exists
@@ -1069,6 +1113,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         await updateSummarizeSection()
+        
+        // Debug: Check the state after initialization
+        console.log('After initialization:', {
+          summarizeDefault,
+          summarizeUsage,
+          usageCounterText: usageCounter.textContent
+        })
         
         // Initialize prompt editor after everything else is loaded
         initializePromptEditor()
@@ -1309,9 +1360,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const complexityLevel = complexityLevels[complexitySlider.value]
 
-    // Only increment usage and enforce limits when using system default WITHOUT user's API key
+    // Only increment usage and enforce limits when using system default model
     const hasUserApiKey = await hasApiKey(provider.keyName)
-    const isUsingSystemDefault = defaultModel.isSystemDefault && !hasUserApiKey
+    const isUsingSystemDefault = defaultModel.isSystemDefault
+    
+    console.log('=== USAGE TRACKING DEBUG ===')
+    console.log('Model being used:', defaultModel)
+    console.log('Model ID:', defaultModel.id)
+    console.log('Model isSystemDefault:', defaultModel.isSystemDefault)
+    console.log('Provider:', provider)
+    console.log('Provider key name:', provider.keyName)
+    console.log('Has user API key for provider:', hasUserApiKey)
+    console.log('Calculated isUsingSystemDefault:', isUsingSystemDefault)
+    console.log('Current usage before increment:', summarizeUsage)
+    console.log('=============================')
+    
     if (isUsingSystemDefault) {
       if (summarizeUsage >= 25) {
         showNotification('Monthly limit reached. Please use your own API key for unlimited access.', 'error')
@@ -1321,8 +1384,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       
       summarizeUsage++
+      console.log('✅ USAGE INCREMENTED! New usage:', summarizeUsage)
       chrome.storage.local.set({ summarizeUsage })
       await updateSummarizeSection()
+    } else {
+      console.log('❌ Not incrementing usage because not using system default')
     }
 
     // Send message to content script with correct API model ID
@@ -1366,6 +1432,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (currentTabId) {
           chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: event.data.summary })
         }
+        
+        // Update the usage counter display after successful summary
+        updateSummarizeSection().catch(console.error)
       }
 
       summarizeBtn.disabled = false
