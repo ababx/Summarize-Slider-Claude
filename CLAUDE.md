@@ -50,12 +50,15 @@ Note: The Chrome extension uses static files and requires no build process. Load
 ## Key Technical Details
 
 ### UI/UX Features
-- **Shadcn-style Design**: Modern popup interface with tabbed provider selection
+- **Shadcn-style Design**: Modern 560px wide popup interface with tabbed provider selection
 - **Model Selection**: Support for multiple AI providers (OpenAI, Anthropic, Google, Perplexity, X.AI)
-- **API Key Management**: Secure browser storage with masked display and edit/delete functionality
+- **API Key Management**: Secure browser storage with masked display (•••••) and edit/delete functionality
 - **Custom Prompts**: Editable prompts for each complexity level with individual reset buttons
 - **Typography**: Crimson Text font family for summary content with responsive sizing
 - **Usage Tracking**: 25/month limit for system default model with unlimited usage for user API keys
+- **Enhanced Layout**: 30px horizontal padding on major sections for improved readability
+- **Model-Aware Labels**: Complexity labels show both summary type and generating model (e.g., "ELI5 SUMMARY • Gemini Flash 2.5")
+- **Horizontal Tab Indicators**: Status indicators appear to the right of provider names
 
 ### Technical Implementation
 - **Shadow DOM**: Panel uses shadow DOM for style isolation
@@ -64,7 +67,7 @@ Note: The Chrome extension uses static files and requires no build process. Load
 - **State Management**: Extension state persisted across tab interactions
 - **Content Security Policy**: CSP-compliant event handling without inline scripts
 - **Base64 Encoding**: Secure API key storage with base64 encoding in Chrome storage
-- **Dynamic Token Limits**: Complexity-based token allocation (ELI5: 800, Standard: 1000, Expert: 2000)
+- **Dynamic Token Limits**: Complexity-based token allocation (ELI5: 800, Standard: 2000, Expert: 4000)
 
 ### AI Provider Integration
 - **Multi-Provider Support**: OpenAI, Anthropic, Google Gemini, Perplexity, X.AI
@@ -103,9 +106,11 @@ Models are configured in both frontend (`panel.js`) and backend (`app/api/summar
 - ID: `google-gemini-2.5-flash` → API: `gemini-2.5-flash-preview-05-20` (legacy mapping)
 
 ### Usage Tracking Logic
-- **System Default**: Counts against 25/month limit when using `isSystemDefault: true` AND no user API key
+- **System Default**: Counts against 25/month limit when using `isSystemDefault: true` models
 - **User API Keys**: Unlimited usage when user provides own API key for any provider
 - **Separation**: Complete independence between system and user usage tracking
+- **Model Distinction**: System models show "(System)" suffix and "Use this (25/month)" button text
+- **Visual Feedback**: Usage counter displays "X/25 Monthly" for system models, "Unlimited" for user models
 
 The extension automatically adapts to API endpoint changes via the configured base URL in background.js.
 

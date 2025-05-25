@@ -485,10 +485,10 @@ html, body {
 
 /* Model Selector Footer */
 .model-selector-footer {
-  padding: 12px 30px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
-  border-radius: 0 0 8px 8px;
+  padding: 20px;
+  margin: 40px 0 20px 0;
+  background: #f3f4f6;
+  border-radius: 20px;
 }
 
 .default-model-section {
