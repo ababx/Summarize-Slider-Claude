@@ -93,13 +93,24 @@
           </div>
         </div>
         
+        <!-- Separator -->
+        <div class="or-separator">
+          <span class="or-text">OR</span>
+        </div>
+        
         <!-- Model Selector Footer -->
         <div class="model-selector-footer">
           <div class="default-model-section">
-            <div class="default-label">Summarize Slider default model (<span id="footerUsageCounter">0/25 monthly used</span>):</div>
+            <div class="free-tier-header">
+              <div class="free-badge">FREE</div>
+              <div class="usage-count" id="footerUsageCounter">0/25 free monthly summaries used</div>
+            </div>
             <div class="model-card-header">
               <div class="model-info">
-                <span class="default-model-name" id="defaultModelName">Gemini Flash 2.5</span>
+                <div class="model-name-row">
+                  <span class="default-model-name" id="defaultModelName">Gemini Flash 2.5</span>
+                  <span class="model-description">Default model</span>
+                </div>
               </div>
               <button class="set-default-btn hidden" id="setDefaultBtn">Use this</button>
             </div>

@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     // Footer always shows current usage regardless of which model is being used
-    footerUsageCounter.textContent = `${summarizeUsage}/25 monthly used`
+    footerUsageCounter.textContent = `${summarizeUsage}/25 free monthly summaries used`
     
     // Keep footer text static - do NOT update defaultModelName
     // defaultModelName should always show "Gemini Flash 2.5"
