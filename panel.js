@@ -153,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await updateSummarizeSection()
     renderModelsForCurrentProvider()
     updateTopNavModel()
+    updateComplexityLabel()
   }
 
   // Mask API key for display
@@ -166,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Simply return a clean masked format without trying to show actual characters
     // This avoids any encoding issues with the stored key
-    return '****************'
+    return '••••••••••••••••••••••••••••••'
   }
 
   // Simplified API key check
@@ -1135,7 +1136,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const complexityLabel = document.getElementById("complexityLabel")
     
     if (complexityLabel) {
-      complexityLabel.textContent = complexityLabels[complexityLevel]
+      const defaultModel = models.find(m => m.id === summarizeDefault)
+      const modelName = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
+      complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
     }
   }
 
