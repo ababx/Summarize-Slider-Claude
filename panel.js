@@ -471,6 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
       summarizeBtn.disabled = true
       limitReachedState.classList.remove('hidden')
       usageCounter.textContent = '25/25 Monthly'
+      updateResetTimer()
       console.log('Limit reached - showing limit state')
     } else {
       summarizeBtn.disabled = false
@@ -500,6 +501,27 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Update top nav only
     updateTopNavModel()
+  }
+
+  // Calculate and display reset timer
+  function updateResetTimer() {
+    const resetTimerElement = document.getElementById('resetTimer')
+    if (!resetTimerElement) return
+    
+    const now = new Date()
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const timeUntilReset = nextMonth - now
+    
+    const days = Math.floor(timeUntilReset / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((timeUntilReset % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    
+    if (days > 0) {
+      resetTimerElement.textContent = `Resets in ${days} day${days > 1 ? 's' : ''}`
+    } else if (hours > 0) {
+      resetTimerElement.textContent = `Resets in ${hours} hour${hours > 1 ? 's' : ''}`
+    } else {
+      resetTimerElement.textContent = 'Resets soon'
+    }
   }
 
   // Update the current model display in top nav
@@ -1000,6 +1022,20 @@ document.addEventListener("DOMContentLoaded", () => {
         summarizeUsage = result.summarizeUsage || 0
         summarizeDefault = result.summarizeDefault || 'gemini-flash-2.5'
         
+        // Check if usage should reset (monthly reset)
+        const now = new Date()
+        const lastResetDate = result.usageResetDate ? new Date(result.usageResetDate) : null
+        
+        // Reset usage if it's a new month or no reset date exists
+        if (!lastResetDate || now.getMonth() !== lastResetDate.getMonth() || now.getFullYear() !== lastResetDate.getFullYear()) {
+          summarizeUsage = 0
+          const resetDate = new Date(now.getFullYear(), now.getMonth(), 1) // First day of current month
+          chrome.storage.local.set({ 
+            summarizeUsage: 0, 
+            usageResetDate: resetDate.toISOString() 
+          })
+        }
+        
         console.log('=== INITIAL LOAD DEBUG ===')
         console.log('Loaded summarizeUsage:', summarizeUsage)
         console.log('Loaded summarizeDefault:', summarizeDefault)
@@ -1337,7 +1373,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
       summarizeUsage++
       console.log('✅ USAGE INCREMENTED! New usage:', summarizeUsage)
-      chrome.storage.local.set({ summarizeUsage })
+      
+      // Save usage and ensure reset date is set for this month
+      const now = new Date()
+      const resetDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      chrome.storage.local.set({ 
+        summarizeUsage,
+        usageResetDate: resetDate.toISOString()
+      })
       await updateSummarizeSection()
     } else {
       console.log('❌ Not incrementing usage because not using system default')

@@ -787,6 +787,13 @@ html, body {
   line-height: 1.4;
 }
 
+.reset-timer {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
 .provider-links {
   display: flex;
   flex-direction: column;
