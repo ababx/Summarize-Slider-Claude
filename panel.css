@@ -220,7 +220,7 @@ html, body {
 
 .tab-trigger {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   padding: 8px 4px;
@@ -231,6 +231,7 @@ html, body {
   transition: all 0.2s ease;
   position: relative;
   min-height: 40px;
+  gap: 4px;
 }
 
 .tab-trigger:hover {
@@ -255,7 +256,6 @@ html, body {
   height: 8px;
   border-radius: 50%;
   background: #10b981;
-  margin-top: 2px;
 }
 
 .status-indicator.hidden {
