@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey, customPrompt, tokenLimit } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -155,21 +155,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Set token limits based on complexity level or use custom token limit
-    const getDefaultTokenLimit = (complexity: string) => {
+    // Set generous max tokens based on complexity to prevent cutoffs
+    const getMaxTokens = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 800   // Short and simple
-        case "phd":
-          return 4000  // Long and detailed
+          return 1000   // Short but complete summaries
         case "standard":
+          return 2500   // Comprehensive bullet-point summaries
+        case "phd":
+          return 4000   // Detailed analysis without cutoffs
         default:
-          return 2000  // Medium length with bullets
+          return 2500   // Default to standard
       }
     }
 
-    const finalTokenLimit = tokenLimit || getDefaultTokenLimit(complexity)
-    console.log("Token limit for", complexity, "complexity:", finalTokenLimit, tokenLimit ? "(custom)" : "(default)")
+    const maxTokens = getMaxTokens(complexity)
+    console.log("Max tokens for", complexity, "complexity:", maxTokens)
 
     // Use direct API calls for all providers to avoid SDK issues
     try {
@@ -203,7 +204,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: finalTokenLimit,
+              max_tokens: maxTokens,
               temperature: 0.2
             })
           })
@@ -218,7 +219,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { maxOutputTokens: finalTokenLimit, temperature: 0.2 }
+              generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2 }
             })
           })
           break
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
           console.log("Anthropic API key prefix:", effectiveApiKey?.substring(0, 10))
           console.log("Anthropic request body:", JSON.stringify({
             model: selectedModel.model,
-            max_tokens: tokenLimit,
+            max_tokens: maxTokens,
             messages: [{ role: "user", content: prompt }]
           }))
           apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -240,7 +241,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({
               model: selectedModel.model,
-              max_tokens: finalTokenLimit,
+              max_tokens: maxTokens,
               messages: [{ role: "user", content: prompt }]
             })
           })
@@ -257,7 +258,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: finalTokenLimit,
+              max_tokens: maxTokens,
               temperature: 0.2
             })
           })
@@ -274,7 +275,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               model: selectedModel.model,
               messages: [{ role: "user", content: prompt }],
-              max_tokens: finalTokenLimit,
+              max_tokens: maxTokens,
               temperature: 0.2,
               stream: false
             })

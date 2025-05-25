@@ -746,6 +746,12 @@ html, body {
   position: relative;
 }
 
+.button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .usage-counter {
   position: absolute;
   right: 24px;
@@ -757,6 +763,99 @@ html, body {
 .button:hover {
   background-color: #1f2937;
   transform: translateY(-1px);
+}
+
+/* Limit Reached State */
+.limit-reached-state {
+  margin-top: 16px;
+  padding: 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+}
+
+.limit-reached-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.limit-message {
+  font-size: 14px;
+  color: #991b1b;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.provider-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.provider-links-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+.provider-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.provider-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.provider-link:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.provider-link svg {
+  opacity: 0.6;
+}
+
+.limit-reached-model-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  justify-content: center;
+}
+
+.limit-reached-model-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.limit-reached-model-btn svg {
+  color: #6b7280;
+  flex-shrink: 0;
 }
 
 .button:active {

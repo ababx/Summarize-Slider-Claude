@@ -153,6 +153,75 @@
           <span>Summarize</span>
           <span class="usage-counter" id="usageCounter">0/25 Monthly</span>
         </button>
+        
+        <!-- Limit Reached State -->
+        <div id="limitReachedState" class="limit-reached-state hidden">
+          <div class="limit-reached-content">
+            <div class="limit-message">
+              <strong>Monthly limit reached!</strong> Use your own API keys for unlimited summaries.
+            </div>
+            <div class="provider-links">
+              <div class="provider-links-title">Get API keys from:</div>
+              <div class="provider-link-list">
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="provider-link">
+                  <span>OpenAI</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" class="provider-link">
+                  <span>Anthropic</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="provider-link">
+                  <span>Google</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+                <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener noreferrer" class="provider-link">
+                  <span>Perplexity</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+                <a href="https://console.x.ai/" target="_blank" rel="noopener noreferrer" class="provider-link">
+                  <span>X AI</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,3 21,3 21,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <button id="limitReachedModelBtn" class="limit-reached-model-btn">
+              <svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_22843_178)">
+                  <path d="M7.38 6.00867L1.5 11.8887L3.5 13.8887" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3.75 9.63867L5.5 11.3887" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12.5 3.88867C12.5 5.54552 11.1569 6.88867 9.5 6.88867C7.84315 6.88867 6.5 5.54552 6.5 3.88867C6.5 2.23182 7.84315 0.888672 9.5 0.888672C11.1569 0.888672 12.5 2.23182 12.5 3.88867Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+                <defs>
+                  <clipPath id="clip0_22843_178">
+                    <rect width="14" height="14" fill="white" transform="matrix(-4.37114e-08 1 1 4.37114e-08 0 0.388672)"/>
+                  </clipPath>
+                </defs>
+              </svg>
+              Pick Models & Add Keys
+            </button>
+          </div>
+        </div>
       </div>
       
       <div id="loadingIndicator" class="loading hidden">
@@ -182,10 +251,6 @@
             <div class="prompt-label-row">
               <label class="prompt-label">ELI5 Prompt:</label>
               <div class="prompt-controls">
-                <div class="token-limit-control">
-                  <label class="token-label">Tokens:</label>
-                  <input type="number" id="eli5TokenLimit" class="token-input" min="100" max="10000" value="800">
-                </div>
                 <button class="btn-reset-individual" data-prompt="eli5" title="Reset ELI5 to default">Reset to Default</button>
               </div>
             </div>
@@ -195,10 +260,6 @@
             <div class="prompt-label-row">
               <label class="prompt-label">Standard Prompt:</label>
               <div class="prompt-controls">
-                <div class="token-limit-control">
-                  <label class="token-label">Tokens:</label>
-                  <input type="number" id="standardTokenLimit" class="token-input" min="100" max="10000" value="2000">
-                </div>
                 <button class="btn-reset-individual" data-prompt="standard" title="Reset Standard to default">Reset to Default</button>
               </div>
             </div>
@@ -208,10 +269,6 @@
             <div class="prompt-label-row">
               <label class="prompt-label">Expert Level Prompt:</label>
               <div class="prompt-controls">
-                <div class="token-limit-control">
-                  <label class="token-label">Tokens:</label>
-                  <input type="number" id="phdTokenLimit" class="token-input" min="100" max="10000" value="4000">
-                </div>
                 <button class="btn-reset-individual" data-prompt="phd" title="Reset Expert Level to default">Reset to Default</button>
               </div>
             </div>

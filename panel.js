@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const setDefaultBtn = document.getElementById("setDefaultBtn")
   const defaultModelName = document.getElementById("defaultModelName")
   const footerUsageCounter = document.getElementById("footerUsageCounter")
+  const limitReachedState = document.getElementById("limitReachedState")
+  const limitReachedModelBtn = document.getElementById("limitReachedModelBtn")
 
   // Prompt editor elements
   const promptEditorOverlay = document.getElementById("promptEditorOverlay")
@@ -59,23 +61,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Default prompts
   const defaultPrompts = {
-    eli5: "Create a brief, simple summary of the content from {url} in language a 10-year-old would understand. Keep it short and focus only on the most important points. Use simple words and short sentences. Do not include introductory phrases - start directly with the summary:",
-    standard: "Summarize the content from {url} in a clear, organized way using bullet points. Cover the main topics and key insights that would be valuable to most readers. Keep it concise but informative. Do not include introductory phrases - start directly with the summary:",
-    phd: "Provide a comprehensive, analytical summary of the content from {url}. Include detailed insights, implications, technical context, and critical analysis. Use structured formatting with bullet points and subheadings to organize complex information. Maintain scholarly depth while being accessible. Do not include introductory phrases - start directly with the analysis:"
+    eli5: "Create a short, simple summary of the content from {url} that a 10-year-old would understand. Format as 3-5 bullet points covering the most important ideas. Use simple words and short sentences. Start directly with bullet points - no introduction needed.",
+    standard: "Summarize the content from {url} using insightful bullet points. Focus on key takeaways, main arguments, and practical insights that readers can apply. Organize information clearly with 5-8 comprehensive bullet points. Ensure the summary is complete and doesn't end abruptly.",
+    phd: "Provide a comprehensive analytical summary of the content from {url} using detailed bullet points. Include critical analysis, implications, technical context, and scholarly insights. Use 8-12 in-depth bullet points with sub-points where appropriate. Ensure thorough coverage without abrupt endings - complete all important aspects of the content."
   }
 
   // Custom prompts (loaded from storage)
   let customPrompts = { ...defaultPrompts }
   
-  // Default token limits
-  const defaultTokenLimits = {
-    eli5: 800,     // Short and simple
-    standard: 2000, // Medium length with bullets
-    phd: 4000      // Long and detailed
-  }
-
-  // Custom token limits (loaded from storage)
-  let customTokenLimits = { ...defaultTokenLimits }
   
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
@@ -470,13 +463,26 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('Current usage:', summarizeUsage)
     console.log('===================================')
     
-    // Only show usage counter when using system default WITHOUT user's API key
-    if (isUsingSystemDefault) {
-      usageCounter.textContent = `${summarizeUsage}/25 Monthly`
-      console.log('Setting usage counter to:', `${summarizeUsage}/25 Monthly`)
+    // Check if limit is reached for system default
+    const limitReached = isUsingSystemDefault && summarizeUsage >= 25
+    
+    // Show/hide limit reached state and disable button accordingly
+    if (limitReached) {
+      summarizeBtn.disabled = true
+      limitReachedState.classList.remove('hidden')
+      usageCounter.textContent = '25/25 Monthly'
+      console.log('Limit reached - showing limit state')
     } else {
-      usageCounter.textContent = 'Unlimited'
-      console.log('Setting usage counter to: Unlimited')
+      summarizeBtn.disabled = false
+      limitReachedState.classList.add('hidden')
+      
+      if (isUsingSystemDefault) {
+        usageCounter.textContent = `${summarizeUsage}/25 Monthly`
+        console.log('Setting usage counter to:', `${summarizeUsage}/25 Monthly`)
+      } else {
+        usageCounter.textContent = 'Unlimited'
+        console.log('Setting usage counter to: Unlimited')
+      }
     }
     
     // Footer always shows current usage regardless of which model is being used
@@ -755,6 +761,11 @@ document.addEventListener("DOMContentLoaded", () => {
     await setAsDefault('gemini-flash-2.5')
     chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
   })
+  
+  // Setup limit reached model button
+  limitReachedModelBtn.addEventListener('click', () => {
+    modelSelectorOverlay.classList.remove('hidden')
+  })
 
   // Check if chrome is defined, if not, define it as an empty object with required methods
   if (typeof chrome === "undefined") {
@@ -789,32 +800,17 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  // Load custom token limits from storage
-  async function loadCustomTokenLimits() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['customTokenLimits'], (result) => {
-        if (result.customTokenLimits) {
-          customTokenLimits = { ...defaultTokenLimits, ...result.customTokenLimits }
-        }
-        resolve()
-      })
-    })
-  }
 
   // Save custom prompts to storage
   function saveCustomPrompts() {
     chrome.storage.local.set({ customPrompts })
   }
 
-  function saveCustomTokenLimits() {
-    chrome.storage.local.set({ customTokenLimits })
-  }
 
   // Open prompt editor
   function openPromptEditor() {
     console.log('Opening prompt editor...')
     console.log('Current custom prompts:', customPrompts)
-    console.log('Current custom token limits:', customTokenLimits)
     
     // Prefill with the exact prompts that are being sent to models
     if (eli5PromptTextarea) {
@@ -825,21 +821,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (phdPromptTextarea) {
       phdPromptTextarea.value = customPrompts.phd || defaultPrompts.phd
-    }
-
-    // Prefill token limits
-    const eli5TokenInput = document.getElementById('eli5TokenLimit')
-    const standardTokenInput = document.getElementById('standardTokenLimit') 
-    const phdTokenInput = document.getElementById('phdTokenLimit')
-    
-    if (eli5TokenInput) {
-      eli5TokenInput.value = customTokenLimits.eli5 || defaultTokenLimits.eli5
-    }
-    if (standardTokenInput) {
-      standardTokenInput.value = customTokenLimits.standard || defaultTokenLimits.standard
-    }
-    if (phdTokenInput) {
-      phdTokenInput.value = customTokenLimits.phd || defaultTokenLimits.phd
     }
     
     if (promptEditorOverlay) {
@@ -868,23 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!customPrompts.standard) customPrompts.standard = defaultPrompts.standard
     if (!customPrompts.phd) customPrompts.phd = defaultPrompts.phd
     
-    // Save token limits
-    const eli5TokenInput = document.getElementById('eli5TokenLimit')
-    const standardTokenInput = document.getElementById('standardTokenLimit') 
-    const phdTokenInput = document.getElementById('phdTokenLimit')
-    
-    if (eli5TokenInput) {
-      customTokenLimits.eli5 = parseInt(eli5TokenInput.value) || defaultTokenLimits.eli5
-    }
-    if (standardTokenInput) {
-      customTokenLimits.standard = parseInt(standardTokenInput.value) || defaultTokenLimits.standard
-    }
-    if (phdTokenInput) {
-      customTokenLimits.phd = parseInt(phdTokenInput.value) || defaultTokenLimits.phd
-    }
-    
     saveCustomPrompts()
-    saveCustomTokenLimits()
     closePromptEditorPopup()
   }
 
@@ -915,32 +880,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (eli5PromptTextarea) {
           eli5PromptTextarea.value = defaultPrompts.eli5
         }
-        const eli5TokenInput = document.getElementById('eli5TokenLimit')
-        if (eli5TokenInput) {
-          eli5TokenInput.value = defaultTokenLimits.eli5
-        }
         break
       case 'standard':
         if (standardPromptTextarea) {
           standardPromptTextarea.value = defaultPrompts.standard
-        }
-        const standardTokenInput = document.getElementById('standardTokenLimit')
-        if (standardTokenInput) {
-          standardTokenInput.value = defaultTokenLimits.standard
         }
         break
       case 'phd':
         if (phdPromptTextarea) {
           phdPromptTextarea.value = defaultPrompts.phd
         }
-        const phdTokenInput = document.getElementById('phdTokenLimit')
-        if (phdTokenInput) {
-          phdTokenInput.value = defaultTokenLimits.phd
-        }
         break
     }
     
-    console.log(`${promptType} prompt and token limit reset to default`)
+    console.log(`${promptType} prompt reset to default`)
   }
 
   // Get current prompt for complexity level
@@ -948,10 +901,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return customPrompts[complexity] || defaultPrompts[complexity]
   }
 
-  // Get current token limit for complexity level
-  function getCurrentTokenLimit(complexity) {
-    return customTokenLimits[complexity] || defaultTokenLimits[complexity]
-  }
 
   // Initialize prompt editor event listeners (will be called after DOM is ready)
   function initializePromptEditor() {
@@ -1009,9 +958,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (response && response.tabId) {
       currentTabId = response.tabId
 
-      // Load custom prompts and token limits first
+      // Load custom prompts first
       await loadCustomPrompts()
-      await loadCustomTokenLimits()
 
       // Load saved data
       chrome.storage.local.get([
@@ -1380,9 +1328,10 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (isUsingSystemDefault) {
       if (summarizeUsage >= 25) {
-        showNotification('Monthly limit reached. Please use your own API key for unlimited access.', 'error')
-        summarizeBtn.disabled = false
+        // This shouldn't happen since button should be disabled, but safety check
+        console.log('❌ Usage limit reached, request blocked')
         loadingIndicator.classList.add('hidden')
+        summarizeBtn.disabled = false
         return
       }
       
@@ -1402,17 +1351,15 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('Is system default:', defaultModel.isSystemDefault)
     console.log('Has API key:', !!apiKey)
     
-    // Get custom prompt and token limit for the selected complexity
+    // Get custom prompt for the selected complexity
     const customPrompt = getCurrentPrompt(complexityLevel)
-    const customTokenLimit = getCurrentTokenLimit(complexityLevel)
     
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
       model: modelToSend,
       apiKey: apiKey,
-      customPrompt: customPrompt,
-      tokenLimit: customTokenLimit
+      customPrompt: customPrompt
     }, "*")
   })
 
