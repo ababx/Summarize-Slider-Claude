@@ -777,17 +777,16 @@ html, body {
 }
 
 .limit-message {
-  font-size: 14px;
+  font-size: 16px;
   color: #991b1b;
   text-align: center;
   line-height: 1.4;
 }
 
 .reset-timer {
-  font-size: 12px;
+  font-size: 14px;
   color: #6b7280;
   margin-top: 8px;
-  font-weight: 500;
 }
 
 .provider-links {
@@ -798,7 +797,6 @@ html, body {
 
 .provider-links-title {
   font-size: 13px;
-  font-weight: 600;
   color: #374151;
   text-align: center;
 }
@@ -806,7 +804,7 @@ html, body {
 .provider-link-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
   justify-content: center;
 }
 
@@ -841,7 +839,7 @@ html, body {
   gap: 8px;
   padding: 12px 20px;
   background: #f9fafb;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;

@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await response.json()
-        const summaryText = data.choices?.[0]?.message?.content || "No summary generated"
+        const summaryText = data.choices?.[0]?.message?.content || "No summary generated. Try again."
 
         // Return the summary
         return NextResponse.json({ summary: summaryText })
@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
       }
 
       const data = await apiResponse.json()
-      let summaryText = "No summary generated"
+      let summaryText = "No summary generated. Try again."
       
       // Extract text based on provider response format
       switch (selectedModel.providerName) {
