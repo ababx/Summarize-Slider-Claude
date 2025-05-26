@@ -210,8 +210,8 @@ html, body {
   grid-template-columns: repeat(5, 1fr);
   gap: 2px;
   background: #f3f4f6;
-  border-radius: 6px 6px 0 0;
-  padding: 2px;
+  border-radius: 12px 12px 0 0;
+  padding: 2px 2px 0 2px;
 }
 
 .tab-trigger {
@@ -222,7 +222,7 @@ html, body {
   padding: 8px 4px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px 10px 0 0;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -236,7 +236,6 @@ html, body {
 
 .tab-trigger.active {
   background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .tab-name {
@@ -261,8 +260,9 @@ html, body {
 /* API Key Section */
 .tab-content {
   border: 1px solid #f3f4f6;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 12px 12px;
   padding: 12px;
+  border-top:0;
 }
 
 .api-key-section {
@@ -507,7 +507,7 @@ html, body {
   padding: 20px;
   margin: 0;
   background: #f3f4f6;
-  border-radius: 20px;
+  border-radius: 12px;
 }
 
 .default-model-section {
