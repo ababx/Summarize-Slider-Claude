@@ -757,7 +757,7 @@ html, body {
 .button:hover {
   background-color: #1f2937;
   transform: translateY(-1px);
-  opacity:0.8;
+  opacity: 0.8;
 }
 
 /* Limit Reached State */
@@ -818,7 +818,6 @@ html, body {
   text-decoration: none;
   color: #374151;
   font-size: 12px;
-  font-weight: 500;
   transition: all 0.2s ease;
 }
 
@@ -837,24 +836,24 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: #f9fafb;
+  background: #111827;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
   justify-content: center;
 }
 
+
 .limit-reached-model-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  opacity: 08.;
 }
 
 .limit-reached-model-btn svg {
-  color: #6b7280;
+  color: #fff;
   flex-shrink: 0;
 }
 
