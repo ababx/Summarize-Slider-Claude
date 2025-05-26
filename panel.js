@@ -1012,8 +1012,13 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
           if (summaryContainer.classList.contains("hidden")) {
             if (result[`summary_${currentTabId}`]) {
-              renderMarkdown(result[`summary_${currentTabId}`])
-              summaryContainer.classList.remove("hidden")
+              // Handle old format (just text)
+              const oldSummary = result[`summary_${currentTabId}`]
+              const summaryText = typeof oldSummary === 'string' ? oldSummary : oldSummary.content
+              if (summaryText) {
+                renderMarkdown(summaryText)
+                summaryContainer.classList.remove("hidden")
+              }
             }
           }
         }, 100)
@@ -1120,9 +1125,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const complexityLabel = document.getElementById("complexityLabel")
     
     if (complexityLabel) {
-      const defaultModel = models.find(m => m.id === summarizeDefault)
-      const modelName = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
-      complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
+      // Check if there's an existing summary for this complexity level
+      if (currentTabId) {
+        const storageKey = `summary_${complexityLevel}_${currentTabId}`
+        chrome.storage.local.get([storageKey], (result) => {
+          const summaryData = result[storageKey]
+          
+          // If there's an existing summary, show the model that generated it
+          if (summaryData) {
+            let modelName
+            if (typeof summaryData === 'object' && summaryData.modelName) {
+              // New format with model info
+              modelName = summaryData.modelName
+            } else {
+              // Old format (just text) - we don't know what model generated it
+              modelName = 'Unknown Model'
+            }
+            complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
+          } else {
+            // No existing summary, show currently selected model
+            const defaultModel = models.find(m => m.id === summarizeDefault)
+            const modelName = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
+            complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
+          }
+        })
+      } else {
+        // No tab ID available, show currently selected model
+        const defaultModel = models.find(m => m.id === summarizeDefault)
+        const modelName = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
+        complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
+      }
     }
   }
 
@@ -1135,14 +1167,26 @@ document.addEventListener("DOMContentLoaded", () => {
     
     chrome.storage.local.get([storageKey], (result) => {
       if (result[storageKey]) {
-        renderMarkdown(result[storageKey])
-        summaryContainer.classList.remove("hidden")
-        errorContainer.classList.add("hidden")
+        // Handle both old format (just text) and new format (object with content and model)
+        const summaryData = result[storageKey]
+        const summaryText = typeof summaryData === 'string' ? summaryData : summaryData.content
+        
+        if (summaryText) {
+          renderMarkdown(summaryText)
+          summaryContainer.classList.remove("hidden")
+          errorContainer.classList.add("hidden")
+        } else {
+          summaryContainer.classList.add("hidden")
+          errorContainer.classList.add("hidden")
+        }
       } else {
         // No summary available for this complexity level
         summaryContainer.classList.add("hidden")
         errorContainer.classList.add("hidden")
       }
+      
+      // Update complexity label after loading summary
+      updateComplexityLabel()
       
       // Update slider position after content changes (scrollbar might appear/disappear)
       setTimeout(() => {
@@ -1418,12 +1462,22 @@ document.addEventListener("DOMContentLoaded", () => {
         renderMarkdown(event.data.summary)
         summaryContainer.classList.remove("hidden")
 
-        // Save summary with complexity level
+        // Save summary with complexity level and model information
         const complexityLevel = complexityLevels[complexitySlider.value]
+        const defaultModel = models.find(m => m.id === summarizeDefault)
+        const modelName = defaultModel ? defaultModel.name : 'Unknown Model'
+        
+        const summaryData = {
+          content: event.data.summary,
+          modelName: modelName,
+          modelId: summarizeDefault,
+          timestamp: Date.now()
+        }
+        
         if (event.data.tabId) {
-          chrome.storage.local.set({ [`summary_${complexityLevel}_${event.data.tabId}`]: event.data.summary })
+          chrome.storage.local.set({ [`summary_${complexityLevel}_${event.data.tabId}`]: summaryData })
         } else if (currentTabId) {
-          chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: event.data.summary })
+          chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: summaryData })
         }
         
         // Update the usage counter display after successful summary

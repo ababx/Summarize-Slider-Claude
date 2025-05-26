@@ -54,7 +54,7 @@ html, body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .panel-title {
@@ -81,7 +81,6 @@ html, body {
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 500;
   color: #374151;
   transition: all 0.2s ease;
 }
@@ -314,13 +313,12 @@ html, body {
 
 .api-key-description {
   font-size: 13px;
-  color: #6b7280;
+  color: #ffffff;
   line-height: 1.4;
   margin: 0;
   padding: 12px;
-  background: #f8fafc;
+  background: #10b981;
   border-radius: 6px;
-  border-left: 3px solid #10b981;
 }
 
 .key-input-container {
@@ -351,11 +349,10 @@ html, body {
 
 .btn-small {
   padding: 4px 8px;
-  font-size: 10px;
+  font-size: 12px;
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -563,8 +560,7 @@ html, body {
 /* Remove this rule since we're now using model-card-header class */
 
 .default-model-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
   color: #111827;
 }
 
@@ -912,7 +908,7 @@ html, body {
   letter-spacing: 0.5px;
   margin-bottom: 12px;
   padding-bottom: 8px;
- }
+}
 
 #summaryContent {
   font-family: 'Crimson Text', serif;
@@ -975,8 +971,8 @@ html, body {
 }
 
 .error-container {
-  margin-top: 16px;
-  padding: 12px;
+  margin: 30px;
+  padding: 20px;
   background-color: #fef2f2;
   border-radius: 8px;
   color: #dc2626;
