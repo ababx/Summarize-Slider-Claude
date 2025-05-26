@@ -764,8 +764,7 @@ html, body {
 .limit-reached-state {
   margin-top: 16px;
   padding: 20px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #f3f4f6;
   border-radius: 16px;
 }
 
