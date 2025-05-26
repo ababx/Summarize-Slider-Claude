@@ -1031,12 +1031,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const now = new Date()
         const lastResetDate = result.usageResetDate ? new Date(result.usageResetDate) : null
         
-        // Reset usage if it's a new month or no reset date exists
-        if (!lastResetDate || now.getMonth() !== lastResetDate.getMonth() || now.getFullYear() !== lastResetDate.getFullYear()) {
+        // Only reset if we have a reset date AND it's a different month/year
+        // If no reset date exists, initialize it without resetting usage
+        if (lastResetDate && (now.getMonth() !== lastResetDate.getMonth() || now.getFullYear() !== lastResetDate.getFullYear())) {
           summarizeUsage = 0
           const resetDate = new Date(now.getFullYear(), now.getMonth(), 1) // First day of current month
           chrome.storage.local.set({ 
             summarizeUsage: 0, 
+            usageResetDate: resetDate.toISOString() 
+          })
+        } else if (!lastResetDate) {
+          // First time - set reset date without resetting usage
+          const resetDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          chrome.storage.local.set({ 
             usageResetDate: resetDate.toISOString() 
           })
         }
