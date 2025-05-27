@@ -494,11 +494,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Keep footer text static - do NOT update defaultModelName
     // defaultModelName should always show "Gemini Flash 2.5"
     
-    // Show/hide set default button - only show if current default is NOT Gemini Flash
-    if (summarizeDefault !== 'gemini-flash-2.5') {
-      setDefaultBtn.classList.remove('hidden')
-    } else {
+    // Show/hide set default button and badge - show badge if current default IS Gemini Flash
+    const setDefaultBadge = document.getElementById("setDefaultBadge")
+    if (summarizeDefault === 'gemini-flash-2.5') {
       setDefaultBtn.classList.add('hidden')
+      if (setDefaultBadge) setDefaultBadge.classList.remove('hidden')
+    } else {
+      setDefaultBtn.classList.remove('hidden')
+      if (setDefaultBadge) setDefaultBadge.classList.add('hidden')
     }
     
     // Update top nav only
