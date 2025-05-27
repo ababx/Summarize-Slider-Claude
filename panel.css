@@ -491,11 +491,15 @@ html, body {
 .api-key-link {
   pointer-events: auto !important;
   cursor: pointer !important;
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  opacity: 0.8;
 }
 
 .api-key-link:hover {
-  background: #f3f4f6 !important;
-  color: #374151 !important;
+  background: #e5e7eb !important;
+  color: #6b7280 !important;
+  opacity: 1;
 }
 
 /* Separator */
