@@ -434,7 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="model-info">
               <span class="model-name">${model.name}${model.isSystemDefault ? ' (System)' : ''}</span>
             </div>
-            ${model.isDefault ? '<span class="default-badge">Your Default</span>' : buttonElement}
+            ${model.isDefault ? '<span class="default-badge">Active (Your Default)</span>' : buttonElement}
           </div>
           ${modelDescription}
         </div>
@@ -513,12 +513,16 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Show/hide set default button and badge - show badge if current default IS Gemini Flash
     const setDefaultBadge = document.getElementById("setDefaultBadge")
+    const modelSelectorFooter = document.querySelector(".model-selector-footer")
+    
     if (summarizeDefault === 'gemini-flash-2.5') {
       setDefaultBtn.classList.add('hidden')
       if (setDefaultBadge) setDefaultBadge.classList.remove('hidden')
+      if (modelSelectorFooter) modelSelectorFooter.classList.add('active')
     } else {
       setDefaultBtn.classList.remove('hidden')
       if (setDefaultBadge) setDefaultBadge.classList.add('hidden')
+      if (modelSelectorFooter) modelSelectorFooter.classList.remove('active')
     }
     
     // Update top nav only

@@ -471,7 +471,7 @@ html, body {
 
 .default-badge {
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 12px;
   background: #fff;
   color: #111827;
   border-radius: 4px;
@@ -534,6 +534,11 @@ html, body {
   margin: 0;
   background: #f3f4f6;
   border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.model-selector-footer.active {
+  background: #dcfce7;
 }
 
 .default-model-section {
