@@ -762,9 +762,8 @@ html, body {
 
 /* Limit Reached State */
 .limit-reached-state {
-  margin-top: 16px;
+  margin-top: 150px;
   padding: 20px;
-  background: #f3f4f6;
   border-radius: 16px;
 }
 
