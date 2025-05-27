@@ -64,20 +64,6 @@ html, body {
   color: #111827;
 }
 
-.current-model {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.current-model.clickable {
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.current-model.clickable:hover {
-  color: #111827;
-}
 
 .prompts-btn,
 .model-selector-btn {
@@ -368,10 +354,6 @@ html, body {
   height: 28px;
 }
 
-.btn-primary {
-  background: #111827;
-  color: white;
-}
 
 .btn-primary:hover:not(:disabled) {
   background: #111827;
