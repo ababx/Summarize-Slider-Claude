@@ -70,6 +70,15 @@ html, body {
   margin: 0;
 }
 
+.current-model.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.current-model.clickable:hover {
+  color: #111827;
+}
+
 .prompts-btn,
 .model-selector-btn {
   display: flex;

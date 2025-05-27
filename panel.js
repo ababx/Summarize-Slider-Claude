@@ -1503,6 +1503,14 @@ document.addEventListener("DOMContentLoaded", () => {
     modelSelectorOverlay.classList.remove("hidden")
   })
 
+  // Also open model selector when clicking current model label
+  const currentModelLabel = document.getElementById("currentModelLabel")
+  if (currentModelLabel) {
+    currentModelLabel.addEventListener("click", () => {
+      modelSelectorOverlay.classList.remove("hidden")
+    })
+  }
+
   closeModelSelector.addEventListener("click", () => {
     modelSelectorOverlay.classList.add("hidden")
   })
