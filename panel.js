@@ -1,4 +1,17 @@
-document.addEventListener("DOMContentLoaded", () => {
+// Wait for all scripts to load before initializing
+function initializeExtension() {
+  // Check if required classes are available
+  if (typeof KeyManager === 'undefined') {
+    console.error('KeyManager class not found. Make sure crypto.js is loaded first.')
+    setTimeout(initializeExtension, 100) // Retry after 100ms
+    return
+  }
+  
+  if (typeof ContentSecurity === 'undefined') {
+    console.error('ContentSecurity class not found. Make sure content-security.js is loaded first.')
+    setTimeout(initializeExtension, 100) // Retry after 100ms
+    return
+  }
   
   // Initialize security managers
   console.log('Initializing KeyManager and ContentSecurity...')
@@ -1598,4 +1611,7 @@ document.addEventListener("DOMContentLoaded", () => {
       attributeFilter: ['class']
     })
   }
-})
+}
+
+// Start the extension when DOM is ready
+document.addEventListener("DOMContentLoaded", initializeExtension)
