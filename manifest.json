@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Summarize Slider",
   "version": "1.0",
-  "description": "Summarizes webpage content using Perplexity Sonar API",
+  "description": "AI-powered webpage summarizer with adjustable complexity levels (ELI5/Standard/Expert) and multi-provider support (OpenAI, Anthropic, Google, Perplexity, X.AI). Get 25 free summaries monthly or unlimited with your own API keys.",
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
