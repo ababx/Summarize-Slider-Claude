@@ -107,6 +107,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Provider API key URLs
+  const providerApiUrls = {
+    openai: "https://platform.openai.com/api-keys",
+    anthropic: "https://console.anthropic.com/settings/keys", 
+    google: "https://aistudio.google.com/app/apikey",
+    perplexity: "https://www.perplexity.ai/settings/api",
+    xai: "https://console.x.ai/"
+  }
+
   // Models data (Gemini Flash as default, separate from user API keys)
   // Model IDs match the API expected format
   const models = [
@@ -386,10 +395,17 @@ document.addEventListener("DOMContentLoaded", () => {
       
       // Different button text for system default vs user API key models
       let buttonText = 'Use this'
+      let buttonElement = ''
+      
       if (isDisabled) {
-        buttonText = 'API key required'
+        // Create link button for API key required
+        const apiUrl = providerApiUrls[model.provider] || '#'
+        buttonElement = `<a href="${apiUrl}" target="_blank" rel="noopener noreferrer" class="${buttonClass}">API key required</a>`
       } else if (model.isSystemDefault) {
         buttonText = 'Use this (25/month)'
+        buttonElement = `<button class="${buttonClass}" data-model-id="${model.id}">${buttonText}</button>`
+      } else {
+        buttonElement = `<button class="${buttonClass}" data-model-id="${model.id}">${buttonText}</button>`
       }
       
       // Determine if this model is active (selected as default and available)
@@ -417,7 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="model-info">
               <span class="model-name">${model.name}${model.isSystemDefault ? ' (System)' : ''}</span>
             </div>
-            ${model.isDefault ? '<span class="default-badge">Your Default</span>' : `<button class="${buttonClass}" data-model-id="${model.id}" ${isDisabled ? 'disabled' : ''}>${buttonText}</button>`}
+            ${model.isDefault ? '<span class="default-badge">Your Default</span>' : buttonElement}
           </div>
           ${modelDescription}
         </div>
