@@ -54,7 +54,7 @@ html, body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
 }
 
 .panel-title {
@@ -85,8 +85,8 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: #fff;
+  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
@@ -97,7 +97,6 @@ html, body {
 .prompts-btn:hover,
 .model-selector-btn:hover {
   background: #f3f4f6;
-  border-color: #d1d5db;
 }
 
 .prompts-btn svg,
