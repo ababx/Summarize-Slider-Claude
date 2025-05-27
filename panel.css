@@ -279,7 +279,7 @@ html, body {
 
 .api-key-container {
   padding: 12px;
-  background: #10b981;
+  background: #f3f4f6;
   border-radius: 6px;
 }
 
@@ -297,7 +297,7 @@ html, body {
 }
 
 .key-icon {
-  color: #10b981;
+  color: #000;
   flex-shrink: 0;
 }
 
@@ -323,7 +323,7 @@ html, body {
 
 .api-key-description {
   font-size: 13px;
-  color: #ffffff;
+  color: #000;
   line-height: 1.4;
   margin: 0;
 }
@@ -337,7 +337,7 @@ html, body {
 .key-input {
   flex: 1;
   padding: 6px 8px;
-  border: 1px solid #10b981;
+  border: 1px solid #111827;
   border-radius: 4px;
   font-size: 11px;
   background: white;
