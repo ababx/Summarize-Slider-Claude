@@ -416,9 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="model-card-header">
             <div class="model-info">
               <span class="model-name">${model.name}${model.isSystemDefault ? ' (System)' : ''}</span>
-              ${model.isDefault ? '<span class="default-badge">Your Default</span>' : ''}
             </div>
-            ${!model.isDefault ? `<button class="${buttonClass}" data-model-id="${model.id}" ${isDisabled ? 'disabled' : ''}>${buttonText}</button>` : ''}
+            ${model.isDefault ? '<span class="default-badge">Your Default</span>' : `<button class="${buttonClass}" data-model-id="${model.id}" ${isDisabled ? 'disabled' : ''}>${buttonText}</button>`}
           </div>
           ${modelDescription}
         </div>
