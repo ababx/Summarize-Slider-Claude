@@ -119,8 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", provider: "anthropic", apiId: "anthropic-claude-3.5-haiku" },
     { id: "gpt-4o", name: "GPT-4o", provider: "openai", apiId: "openai-gpt-4o" },
     { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", apiId: "openai-gpt-4o-mini" },
-    { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", apiId: "openai-gpt-4-turbo" },
-    { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "openai", apiId: "openai-gpt-3.5-turbo" },
+    { id: "gpt-4.1", name: "GPT-4.1", provider: "openai", apiId: "openai-gpt-4.1" },
+    { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai", apiId: "openai-gpt-4.1-mini" },
+    { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", provider: "openai", apiId: "openai-gpt-4.1-nano" },
+    { id: "o3-mini", name: "o3 Mini", provider: "openai", apiId: "openai-o3-mini" },
+    { id: "o1-mini", name: "o1 Mini", provider: "openai", apiId: "openai-o1-mini" },
     { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
   ]
 
