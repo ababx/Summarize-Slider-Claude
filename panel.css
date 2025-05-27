@@ -488,6 +488,16 @@ html, body {
   justify-content: center;
 }
 
+.api-key-link {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.api-key-link:hover {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
 /* Separator */
 .separator {
   height: 1px;

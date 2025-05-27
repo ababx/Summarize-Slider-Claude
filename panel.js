@@ -398,9 +398,10 @@ document.addEventListener("DOMContentLoaded", () => {
       let buttonElement = ''
       
       if (isDisabled) {
-        // Create link button for API key required
+        // Create link button for API key required (remove disabled class from links)
         const apiUrl = providerApiUrls[model.provider] || '#'
-        buttonElement = `<a href="${apiUrl}" target="_blank" rel="noopener noreferrer" class="${buttonClass}">API key required</a>`
+        const linkClass = 'btn-small btn-ghost set-default-btn api-key-link'
+        buttonElement = `<a href="${apiUrl}" target="_blank" rel="noopener noreferrer" class="${linkClass}">API key required</a>`
       } else if (model.isSystemDefault) {
         buttonText = 'Use this (25/month)'
         buttonElement = `<button class="${buttonClass}" data-model-id="${model.id}">${buttonText}</button>`
