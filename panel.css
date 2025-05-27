@@ -621,7 +621,7 @@ html, body {
 /* Complexity Section */
 .complexity-section {
   margin-bottom: 8px;
-  padding: 16px 30px;
+  padding: 16px 60px;
 }
 
 /* Complexity Selector Styles */
@@ -705,6 +705,48 @@ html, body {
   z-index: 3;
   transition: left 0.3s ease;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-thumb svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}
+
+.slider-thumb.eli5::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.60159 13.5991C5.45024 13.5996 5.30185 13.5572 5.17367 13.4767C5.04548 13.3962 4.94275 13.2811 4.87742 13.1445C4.81209 13.008 4.78684 12.8558 4.8046 12.7055C4.82236 12.5552 4.8824 12.413 4.97775 12.2954L12.8957 4.13756C12.9551 4.069 13.036 4.02267 13.1252 4.00618C13.2144 3.98969 13.3066 4.004 13.3865 4.04679C13.4665 4.08957 13.5296 4.15827 13.5654 4.24162C13.6012 4.32497 13.6076 4.418 13.5835 4.50546L12.0479 9.32021C12.0026 9.4414 11.9874 9.57176 12.0036 9.70012C12.0198 9.82847 12.0668 9.95099 12.1408 10.0572C12.2147 10.1633 12.3133 10.25 12.428 10.3097C12.5428 10.3694 12.6703 10.4003 12.7997 10.3999H18.3983C18.5496 10.3994 18.698 10.4419 18.8262 10.5223C18.9544 10.6028 19.0571 10.718 19.1224 10.8545C19.1878 10.991 19.213 11.1433 19.1953 11.2936C19.1775 11.4439 19.1174 11.5861 19.0221 11.7036L11.1042 19.8615C11.0448 19.93 10.9638 19.9763 10.8746 19.9928C10.7854 20.0093 10.6933 19.995 10.6133 19.9522C10.5333 19.9095 10.4703 19.8408 10.4345 19.7574C10.3987 19.6741 10.3923 19.581 10.4163 19.4936L11.9519 14.6788C11.9972 14.5576 12.0124 14.4273 11.9963 14.2989C11.9801 14.1706 11.933 14.048 11.8591 13.9419C11.7852 13.8357 11.6866 13.749 11.5718 13.6893C11.457 13.6296 11.3295 13.5987 11.2001 13.5991H5.60159Z" stroke="black" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.7;
+}
+
+.slider-thumb.standard::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33325 5.28857H8.73325C9.68803 5.28857 10.6037 5.66786 11.2788 6.34299C11.954 7.01812 12.3333 7.93379 12.3333 8.88857V21.4886C12.3333 20.7725 12.0488 20.0857 11.5424 19.5794C11.0361 19.073 10.3493 18.7886 9.63325 18.7886H3.33325V5.28857Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21.3333 5.28857H15.9333C14.9785 5.28857 14.0628 5.66786 13.3877 6.34299C12.7125 7.01812 12.3333 7.93379 12.3333 8.88857V21.4886C12.3333 20.7725 12.6177 20.0857 13.1241 19.5794C13.6304 19.073 14.3172 18.7886 15.0333 18.7886H21.3333V5.28857Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.7;
+}
+
+.slider-thumb.expert::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.4637 11.311C20.6247 11.2321 20.7613 11.1023 20.8566 10.9378C20.9519 10.7734 21.0018 10.5814 21 10.3858C20.9981 10.1901 20.9447 9.99935 20.8464 9.83711C20.748 9.67487 20.609 9.54829 20.4466 9.47303L12.7385 5.56903C12.5042 5.45018 12.2497 5.38867 11.9921 5.38867C11.7346 5.38867 11.48 5.45018 11.2457 5.56903L3.53853 9.46903C3.37842 9.547 3.24222 9.67516 3.14658 9.83784C3.05094 10.0005 3 10.1907 3 10.385C3 10.5794 3.05094 10.7695 3.14658 10.9322C3.24222 11.0949 3.37842 11.2231 3.53853 11.301L11.2457 15.209C11.48 15.3279 11.7346 15.3894 11.9921 15.3894C12.2497 15.3894 12.5042 15.3279 12.7385 15.209L20.4637 11.311Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.9854 10.3892V16.3892" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.59619 12.8892V16.3892C6.59619 17.1848 7.16469 17.9479 8.17661 18.5105C9.18854 19.0731 10.561 19.3892 11.9921 19.3892C13.4232 19.3892 14.7956 19.0731 15.8076 18.5105C16.8195 17.9479 17.388 17.1848 17.388 16.3892V12.8892" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.7;
 }
 
 .slider-labels {
@@ -731,7 +773,7 @@ html, body {
 }
 
 .slider-sublabel {
-  font-size: 12px;
+  font-size: 14px;
   color: #6b7280;
 }
 

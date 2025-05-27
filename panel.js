@@ -1273,6 +1273,16 @@ function initializeExtension() {
     leftPosition = Math.max(leftPadding, Math.min(leftPosition, effectiveContainerWidth - rightPadding - thumbWidth))
 
     sliderThumb.style.left = `${leftPosition}px`
+    
+    // Update thumb icon based on value
+    sliderThumb.className = 'slider-thumb'
+    if (value == 0) {
+      sliderThumb.classList.add('eli5')
+    } else if (value == 1) {
+      sliderThumb.classList.add('standard')
+    } else {
+      sliderThumb.classList.add('expert')
+    }
   }
 
   // Function to render Markdown
