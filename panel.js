@@ -31,6 +31,7 @@ function initializeExtension() {
   console.log("Selecting panel elements...")
   const summarizeBtn = document.getElementById("summarizeBtn")
   const loadingIndicator = document.getElementById("loadingIndicator")
+  const loadingText = document.getElementById("loadingText")
   const summaryContainer = document.getElementById("summaryContainer")
   const summaryContent = document.getElementById("summaryContent")
   const errorContainer = document.getElementById("errorContainer")
@@ -1451,8 +1452,17 @@ function initializeExtension() {
       }
     }
 
+    // Start with "Extracting content..." state
+    loadingText.textContent = "Extracting content..."
     loadingIndicator.classList.remove("hidden")
     summarizeBtn.disabled = true
+    
+    // After 2 seconds, transition to "Generating summary..."
+    setTimeout(() => {
+      if (loadingText && !loadingIndicator.classList.contains("hidden")) {
+        loadingText.textContent = "Generating summary..."
+      }
+    }, 2000)
 
     const complexityLevel = complexityLevels[complexitySlider.value]
 
@@ -1476,6 +1486,7 @@ function initializeExtension() {
         // This shouldn't happen since button should be disabled, but safety check
         console.log('❌ Usage limit reached, request blocked')
         loadingIndicator.classList.add('hidden')
+        loadingText.textContent = "Extracting content..."
         summarizeBtn.disabled = false
         return
       }
@@ -1519,6 +1530,8 @@ function initializeExtension() {
   window.addEventListener("message", (event) => {
     if (event.data.action === "summaryResult") {
       loadingIndicator.classList.add("hidden")
+      // Reset loading text for next time
+      loadingText.textContent = "Extracting content..."
 
       if (event.data.error) {
         errorMessage.textContent = event.data.error
