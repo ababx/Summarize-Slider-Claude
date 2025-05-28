@@ -780,11 +780,6 @@ html, body {
 /* Custom Query Styles */
 .custom-query-container {
   margin-bottom: 16px;
-  padding: 16px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  transition: all 0.3s ease;
 }
 
 .custom-query-input {
