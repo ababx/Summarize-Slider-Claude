@@ -45,8 +45,6 @@ function initializeExtension() {
   const customQueryBtn = document.getElementById("customQueryBtn")
   const customQueryContainer = document.getElementById("customQueryContainer")
   const customQueryInput = document.getElementById("customQueryInput")
-  const clearQueryBtn = document.getElementById("clearQueryBtn")
-  const closeQueryBtn = document.getElementById("closeQueryBtn")
   
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
@@ -1680,17 +1678,6 @@ function initializeExtension() {
       }
     })
     
-    // Clear query input
-    clearQueryBtn.addEventListener('click', () => {
-      customQueryInput.value = ''
-      customQueryInput.focus()
-    })
-    
-    // Close query container
-    closeQueryBtn.addEventListener('click', () => {
-      customQueryContainer.classList.add('hidden')
-      customQueryBtn.classList.remove('active')
-    })
     
     // Auto-resize textarea based on content
     customQueryInput.addEventListener('input', () => {
