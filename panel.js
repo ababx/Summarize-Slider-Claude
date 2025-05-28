@@ -1524,10 +1524,15 @@ function initializeExtension() {
     console.log('Has API key:', !!apiKey)
     
     // Get custom prompt for the selected complexity
-    const customPrompt = getCurrentPrompt(complexityLevel)
+    let customPrompt = getCurrentPrompt(complexityLevel)
     
-    // Get custom query if available
+    // Get custom query if available and modify the prompt to include it
     const customQuery = getCustomQuery()
+    if (customQuery) {
+      customPrompt = `${customPrompt}\n\nAdditional user instructions: ${customQuery}`
+      console.log('Custom query added:', customQuery)
+      console.log('Combined prompt:', customPrompt)
+    }
     
     window.parent.postMessage({
       action: "extractContent",
