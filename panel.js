@@ -1695,7 +1695,7 @@ function initializeExtension() {
     // Auto-resize textarea based on content
     customQueryInput.addEventListener('input', () => {
       customQueryInput.style.height = 'auto'
-      customQueryInput.style.height = Math.max(40, customQueryInput.scrollHeight) + 'px'
+      customQueryInput.style.height = Math.max(100, customQueryInput.scrollHeight) + 'px'
     })
   }
 
