@@ -801,7 +801,6 @@ html, body {
 .custom-query-input:focus {
   outline: none;
   border-color: #111827;
-  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
 }
 
 .custom-query-input::placeholder {
