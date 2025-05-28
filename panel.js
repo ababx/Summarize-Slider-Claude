@@ -41,6 +41,12 @@ function initializeExtension() {
   const closeButton = document.getElementById("closePanel")
   const sliderThumb = document.getElementById("sliderThumb")
   
+  // Custom query elements
+  const customQueryBtn = document.getElementById("customQueryBtn")
+  const customQueryContainer = document.getElementById("customQueryContainer")
+  const customQueryInput = document.getElementById("customQueryInput")
+  const clearQueryBtn = document.getElementById("clearQueryBtn")
+  const closeQueryBtn = document.getElementById("closeQueryBtn")
   
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
@@ -1169,6 +1175,9 @@ function initializeExtension() {
         
         // Initialize prompt editor after everything else is loaded
         initializePromptEditor()
+        
+        // Initialize custom query functionality
+        initializeCustomQuery()
       })
     }
   })
@@ -1517,12 +1526,16 @@ function initializeExtension() {
     // Get custom prompt for the selected complexity
     const customPrompt = getCurrentPrompt(complexityLevel)
     
+    // Get custom query if available
+    const customQuery = getCustomQuery()
+    
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
       model: modelToSend,
       apiKey: apiKey,
-      customPrompt: customPrompt
+      customPrompt: customPrompt,
+      customQuery: customQuery
     }, "*")
   })
 
@@ -1635,6 +1648,68 @@ function initializeExtension() {
       attributes: true,
       attributeFilter: ['class']
     })
+  }
+
+  // Custom query functionality
+  function initializeCustomQuery() {
+    // Check for pre-selected text when panel opens
+    checkForSelectedText()
+    
+    // Toggle custom query container
+    customQueryBtn.addEventListener('click', () => {
+      const isVisible = !customQueryContainer.classList.contains('hidden')
+      
+      if (isVisible) {
+        customQueryContainer.classList.add('hidden')
+        customQueryBtn.classList.remove('active')
+      } else {
+        customQueryContainer.classList.remove('hidden')
+        customQueryBtn.classList.add('active')
+        customQueryInput.focus()
+      }
+    })
+    
+    // Clear query input
+    clearQueryBtn.addEventListener('click', () => {
+      customQueryInput.value = ''
+      customQueryInput.focus()
+    })
+    
+    // Close query container
+    closeQueryBtn.addEventListener('click', () => {
+      customQueryContainer.classList.add('hidden')
+      customQueryBtn.classList.remove('active')
+    })
+    
+    // Auto-resize textarea based on content
+    customQueryInput.addEventListener('input', () => {
+      customQueryInput.style.height = 'auto'
+      customQueryInput.style.height = Math.max(200, customQueryInput.scrollHeight) + 'px'
+    })
+  }
+
+  // Check for selected text and pre-fill if available
+  function checkForSelectedText() {
+    // Send message to content script to get selected text
+    window.parent.postMessage({ action: "getSelectedText" }, "*")
+  }
+
+  // Listen for selected text response
+  window.addEventListener("message", (event) => {
+    if (event.data.action === "selectedTextResult" && event.data.selectedText) {
+      // Pre-fill and show custom query if there's selected text
+      customQueryInput.value = `Focus on this part: "${event.data.selectedText}"`
+      customQueryContainer.classList.remove('hidden')
+      customQueryBtn.classList.add('active')
+    }
+  })
+
+  // Update the summarize request to include custom query
+  function getCustomQuery() {
+    if (customQueryContainer.classList.contains('hidden') || !customQueryInput.value.trim()) {
+      return null
+    }
+    return customQueryInput.value.trim()
   }
 }
 

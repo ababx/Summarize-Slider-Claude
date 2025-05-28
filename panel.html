@@ -148,10 +148,26 @@
           </div>
         </div>
         
-        <button id="summarizeBtn" class="button">
-          <span>Summarize</span>
-          <span class="usage-counter" id="usageCounter">0/25 Monthly</span>
-        </button>
+        <!-- Custom Query Input (Hidden by default) -->
+        <div id="customQueryContainer" class="custom-query-container hidden">
+          <textarea id="customQueryInput" class="custom-query-input" placeholder="Ask something specific about this content... (e.g., 'Focus on the financial data' or 'Explain this for a marketing team')"></textarea>
+          <div class="custom-query-actions">
+            <button id="clearQueryBtn" class="btn-secondary btn-small">Clear</button>
+            <button id="closeQueryBtn" class="btn-ghost btn-small">×</button>
+          </div>
+        </div>
+        
+        <div class="summarize-actions">
+          <button id="customQueryBtn" class="custom-query-btn" title="Add custom instructions">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button id="summarizeBtn" class="button">
+            <span>Summarize</span>
+            <span class="usage-counter" id="usageCounter">0/25 Monthly</span>
+          </button>
+        </div>
         
         <!-- Limit Reached State -->
         <div id="limitReachedState" class="limit-reached-state hidden">

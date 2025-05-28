@@ -100,6 +100,17 @@ if (!document.getElementById("summarizer-panel-container")) {
     if (event.data.action === "closePanel") {
       closePanel()
     }
+    
+    if (event.data.action === "getSelectedText") {
+      const selectedText = window.getSelection().toString().trim()
+      iframe.contentWindow.postMessage(
+        {
+          action: "selectedTextResult",
+          selectedText: selectedText
+        },
+        "*"
+      )
+    }
 
     if (event.data.action === "extractContent") {
       try {
@@ -152,6 +163,7 @@ if (!document.getElementById("summarizer-panel-container")) {
             model: event.data.model,
             apiKey: event.data.apiKey,
             customPrompt: event.data.customPrompt,
+            customQuery: event.data.customQuery,
             tokenLimit: event.data.tokenLimit,
             tabId: currentTabId, // Pass the tab ID
           },
