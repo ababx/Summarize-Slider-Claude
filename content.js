@@ -76,7 +76,7 @@ if (!document.getElementById("summarizer-panel-container")) {
   function openPanel() {
     // Capture selected text when panel opens
     storedSelectedText = window.getSelection().toString().trim()
-    console.log('Panel opening - captured selected text:', storedSelectedText)
+    console.log('🔍 Panel opening - captured selected text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
     
     iframe.style.transform = "translateX(0)"
     overlay.style.opacity = "1"
@@ -110,7 +110,7 @@ if (!document.getElementById("summarizer-panel-container")) {
     
     if (event.data.action === "getSelectedText") {
       // Use stored selected text instead of current selection
-      console.log('Content script: Returning stored selected text:', storedSelectedText)
+      console.log('📤 Content script: Panel requested selected text, returning:', `"${storedSelectedText}"`)
       iframe.contentWindow.postMessage(
         {
           action: "selectedTextResult",
