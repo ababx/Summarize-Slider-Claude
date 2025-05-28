@@ -69,8 +69,15 @@ if (!document.getElementById("summarizer-panel-container")) {
     }
   })
 
+  // Store selected text when panel opens
+  let storedSelectedText = ""
+  
   // Function to open the panel
   function openPanel() {
+    // Capture selected text when panel opens
+    storedSelectedText = window.getSelection().toString().trim()
+    console.log('Panel opening - captured selected text:', storedSelectedText)
+    
     iframe.style.transform = "translateX(0)"
     overlay.style.opacity = "1"
     overlay.style.visibility = "visible"
@@ -102,11 +109,12 @@ if (!document.getElementById("summarizer-panel-container")) {
     }
     
     if (event.data.action === "getSelectedText") {
-      const selectedText = window.getSelection().toString().trim()
+      // Use stored selected text instead of current selection
+      console.log('Content script: Returning stored selected text:', storedSelectedText)
       iframe.contentWindow.postMessage(
         {
           action: "selectedTextResult",
-          selectedText: selectedText
+          selectedText: storedSelectedText
         },
         "*"
       )

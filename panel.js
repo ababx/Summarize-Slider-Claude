@@ -1688,17 +1688,28 @@ function initializeExtension() {
 
   // Check for selected text and pre-fill if available
   function checkForSelectedText() {
+    console.log('Checking for selected text...')
     // Send message to content script to get selected text
     window.parent.postMessage({ action: "getSelectedText" }, "*")
   }
 
   // Listen for selected text response
   window.addEventListener("message", (event) => {
-    if (event.data.action === "selectedTextResult" && event.data.selectedText) {
-      // Pre-fill and show custom query if there's selected text
-      customQueryInput.value = `Focus on this part: "${event.data.selectedText}"`
-      customQueryContainer.classList.remove('hidden')
-      customQueryBtn.classList.add('active')
+    if (event.data.action === "selectedTextResult") {
+      console.log('Received selected text response:', event.data.selectedText)
+      if (event.data.selectedText && event.data.selectedText.trim()) {
+        console.log('Pre-filling custom query with selected text')
+        // Pre-fill and show custom query if there's selected text
+        customQueryInput.value = `Focus on this part: "${event.data.selectedText}"`
+        customQueryContainer.classList.remove('hidden')
+        customQueryBtn.classList.add('active')
+        
+        // Auto-resize the textarea to fit the content
+        customQueryInput.style.height = 'auto'
+        customQueryInput.style.height = Math.max(100, customQueryInput.scrollHeight) + 'px'
+      } else {
+        console.log('No selected text found')
+      }
     }
   })
 
