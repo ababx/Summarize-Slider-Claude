@@ -789,7 +789,8 @@ html, body {
 
 .custom-query-input {
   width: 100%;
-  min-height: 200px;
+  height: 40px;
+  min-height: 40px;
   padding: 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -799,6 +800,7 @@ html, body {
   transition: border-color 0.2s ease;
   background: white;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .custom-query-input:focus {

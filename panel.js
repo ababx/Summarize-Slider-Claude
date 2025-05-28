@@ -1534,6 +1534,12 @@ function initializeExtension() {
       console.log('Combined prompt:', customPrompt)
     }
     
+    // Close custom query container after starting summarization
+    if (!customQueryContainer.classList.contains('hidden')) {
+      customQueryContainer.classList.add('hidden')
+      customQueryBtn.classList.remove('active')
+    }
+    
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
@@ -1689,7 +1695,7 @@ function initializeExtension() {
     // Auto-resize textarea based on content
     customQueryInput.addEventListener('input', () => {
       customQueryInput.style.height = 'auto'
-      customQueryInput.style.height = Math.max(200, customQueryInput.scrollHeight) + 'px'
+      customQueryInput.style.height = Math.max(40, customQueryInput.scrollHeight) + 'px'
     })
   }
 
