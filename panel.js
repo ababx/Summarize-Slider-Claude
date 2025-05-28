@@ -565,10 +565,16 @@ function initializeExtension() {
 
   // Update the current model display in top nav
   function updateTopNavModel() {
-    const currentModelDiv = document.querySelector('.current-model')
+    const currentModelLabel = document.getElementById('currentModelLabel')
     const defaultModel = models.find(m => m.id === summarizeDefault)
-    if (currentModelDiv && defaultModel) {
-      currentModelDiv.textContent = defaultModel.name
+    console.log('updateTopNavModel called:', {
+      currentModelLabel: !!currentModelLabel,
+      defaultModel: defaultModel,
+      summarizeDefault: summarizeDefault
+    })
+    if (currentModelLabel && defaultModel) {
+      currentModelLabel.textContent = defaultModel.name
+      console.log('Updated currentModelLabel to:', defaultModel.name)
     }
   }
 
@@ -1149,6 +1155,9 @@ function initializeExtension() {
         }
         
         await updateSummarizeSection()
+        
+        // Ensure the top nav model is updated
+        updateTopNavModel()
         
         // Debug: Check the state after initialization
         console.log('After initialization:', {
