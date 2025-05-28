@@ -74,9 +74,31 @@ if (!document.getElementById("summarizer-panel-container")) {
   
   // Function to open the panel
   function openPanel() {
-    // Capture selected text when panel opens
-    storedSelectedText = window.getSelection().toString().trim()
+    // Try multiple methods to capture selected text
+    let selectedText = ""
+    
+    // Method 1: document.getSelection()
+    if (document.getSelection) {
+      selectedText = document.getSelection().toString().trim()
+    }
+    
+    // Method 2: window.getSelection() as fallback
+    if (!selectedText && window.getSelection) {
+      selectedText = window.getSelection().toString().trim()
+    }
+    
+    // Method 3: Check for activeElement selection
+    if (!selectedText && document.activeElement) {
+      const active = document.activeElement
+      if (active.selectionStart !== undefined && active.selectionEnd !== undefined) {
+        selectedText = active.value.substring(active.selectionStart, active.selectionEnd).trim()
+      }
+    }
+    
+    storedSelectedText = selectedText
     console.log('🔍 Panel opening - captured selected text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
+    console.log('🔍 document.getSelection():', document.getSelection ? document.getSelection().toString() : 'not available')
+    console.log('🔍 window.getSelection():', window.getSelection ? window.getSelection().toString() : 'not available')
     
     iframe.style.transform = "translateX(0)"
     overlay.style.opacity = "1"
@@ -259,6 +281,21 @@ if (!document.getElementById("summarizer-panel-container")) {
   // Add this event listener at the end of the file to handle messages from the background script
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === "togglePanel") {
+      // Capture selected text immediately when toggle is requested
+      let selectedText = ""
+      
+      // Try multiple methods to capture selected text
+      if (document.getSelection) {
+        selectedText = document.getSelection().toString().trim()
+      }
+      if (!selectedText && window.getSelection) {
+        selectedText = window.getSelection().toString().trim()
+      }
+      
+      // Store the selection before any UI changes
+      storedSelectedText = selectedText
+      console.log('🎯 Extension toggled - immediately captured text:', `"${storedSelectedText}"`)
+      
       if (iframe.style.transform === "translateX(0px)") {
         closePanel()
       } else {
