@@ -851,10 +851,11 @@ html, body {
 
 .custom-query-btn svg {
   transition: transform 0.2s ease;
+  transform: rotate(90deg);
 }
 
 .custom-query-btn.active svg {
-  transform: rotate(90deg);
+  transform: rotate(0deg);
 }
 
 /* Button Styles */
@@ -891,9 +892,9 @@ html, body {
 }
 
 .button:hover {
-  background-color: #1f2937;
+  background-color: #000;
   transform: translateY(-1px);
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* Limit Reached State */

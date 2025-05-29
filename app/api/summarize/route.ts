@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { perplexity } from "@ai-sdk/perplexity"
 import { generateText } from "ai"
+import { getPrompt } from "../../../lib/prompts.js"
 
 // Lazy import other AI providers to avoid initialization issues
 async function getOpenAI() {
@@ -29,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt, customQuery } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -37,8 +38,14 @@ export async function POST(req: NextRequest) {
       url, 
       complexity, 
       model, 
-      hasApiKey: !!apiKey 
+      hasApiKey: !!apiKey,
+      hasCustomPrompt: !!customPrompt,
+      hasCustomQuery: !!customQuery
     })
+    
+    if (customQuery) {
+      console.log("Custom query received:", customQuery)
+    }
 
     if (!text) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
@@ -48,21 +55,17 @@ export async function POST(req: NextRequest) {
     if (!model) {
       console.log("Using default Perplexity model (no model parameter)")
       try {
-        // Create a prompt based on the complexity level
-        let prompt = ""
-
-        switch (complexity) {
-          case "eli5":
-            prompt = `Please summarize the following content from ${url} in simple terms that a 5-year-old could understand. Use short sentences, simple words, and explain any complex concepts in a very basic way:\n\n${text}`
-            break
-          case "phd":
-            prompt = `Please provide a sophisticated, academic-level summary of the following content from ${url}. Use technical terminology where appropriate, maintain scholarly tone, and include nuanced analysis:\n\n${text}`
-            break
-          case "standard":
-          default:
-            prompt = `Please summarize the following content from ${url} in a clear, concise manner for a general audience. Use markdown formatting for better readability:\n\n${text}`
-            break
+        // Create a prompt based on the complexity level using centralized prompts
+        const complexityLevel = complexity === "phd" ? "expert" : complexity;
+        let basePrompt = getPrompt(complexityLevel, url);
+        
+        // Add custom query instructions if provided
+        if (customQuery) {
+          basePrompt = `${basePrompt}\n\nAdditional user instructions: ${customQuery}`;
+          console.log("Added custom query to default model prompt:", customQuery);
         }
+        
+        const prompt = `${basePrompt}\n\n${text}`
 
         // Use direct Perplexity API call to avoid SDK issues
         const perplexityApiKey = process.env.PERPLEXITY_API_KEY
@@ -143,26 +146,24 @@ export async function POST(req: NextRequest) {
       // Use custom prompt and replace {url} placeholder
       prompt = customPrompt.replace('{url}', url) + `\n\n${text}`
     } else {
-      // Use default prompts
-      switch (complexity) {
-        case "eli5":
-          prompt = `Create a brief, simple summary of the content from ${url} in language a 10-year-old would understand. Keep it short and focus only on the most important points. Use simple words and short sentences. Do not include introductory phrases - start directly with the summary:\n\n${text}`
-          break
-        case "phd":
-          prompt = `Provide a comprehensive, analytical summary of the content from ${url}. Include detailed insights, implications, technical context, and critical analysis. Use structured formatting with bullet points and subheadings to organize complex information. Maintain scholarly depth while being accessible. Do not include introductory phrases - start directly with the analysis:\n\n${text}`
-          break
-        case "standard":
-        default:
-          prompt = `Summarize the content from ${url} in a clear, organized way using bullet points. Cover the main topics and key insights that would be valuable to most readers. Keep it concise but informative. Do not include introductory phrases - start directly with the summary:\n\n${text}`
-          break
+      // Use centralized prompts
+      const complexityLevel = complexity === "phd" ? "expert" : complexity;
+      let basePrompt = getPrompt(complexityLevel, url);
+      
+      // Add custom query instructions if provided
+      if (customQuery) {
+        basePrompt = `${basePrompt}\n\nAdditional user instructions: ${customQuery}`;
+        console.log("Added custom query to base prompt:", customQuery);
       }
+      
+      prompt = `${basePrompt}\n\n${text}`
     }
 
     // Set generous max tokens based on complexity to prevent cutoffs
     const getMaxTokens = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 1000   // Short but complete summaries
+          return 1200   // Short but complete summaries
         case "standard":
           return 2500   // Comprehensive bullet-point summaries
         case "phd":

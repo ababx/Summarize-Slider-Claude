@@ -77,15 +77,49 @@ function initializeExtension() {
   let summarizeUsage = 0
   let summarizeDefault = "gemini-flash-2.5"
 
-  // Default prompts
-  const defaultPrompts = {
-    eli5: "Create a short, simple summary of the content from {url} that a 10-year-old would understand. Format as 3-5 bullet points covering the most important ideas. Use simple words and short sentences. Start directly with bullet points - no introduction needed.",
-    standard: "Summarize the content from {url} using insightful bullet points. Focus on key takeaways, main arguments, and practical insights that readers can apply. Organize information clearly with 5-8 comprehensive bullet points. Ensure the summary is complete and doesn't end abruptly.",
-    phd: "Provide a comprehensive analytical summary of the content from {url} using detailed bullet points. Include critical analysis, implications, technical context, and scholarly insights. Use 8-12 in-depth bullet points with sub-points where appropriate. Ensure thorough coverage without abrupt endings - complete all important aspects of the content."
+  // Load centralized prompts from JSON file
+  let PROMPTS = {};
+  let defaultPrompts = {};
+
+  // Function to load prompts from centralized JSON file
+  async function loadPrompts() {
+    try {
+      const response = await fetch(chrome.runtime.getURL('lib/prompts.json'));
+      PROMPTS = await response.json();
+      
+      // Legacy mapping for backward compatibility
+      defaultPrompts = {
+        eli5: PROMPTS.eli5,
+        standard: PROMPTS.standard,
+        phd: PROMPTS.expert  // Map phd to expert for backward compatibility
+      };
+      
+      console.log('📝 Loaded centralized prompts:', PROMPTS);
+      return PROMPTS;
+    } catch (error) {
+      console.error('❌ CRITICAL: Failed to load centralized prompts from lib/prompts.json:', error);
+      console.error('❌ This means prompts are not centralized! Please check that lib/prompts.json exists and is accessible.');
+      
+      // Last resort minimal fallback
+      console.error('❌ Using minimal fallback prompts.');
+      PROMPTS = {
+        eli5: "Summarize this content in simple terms.",
+        standard: "Summarize this content clearly.", 
+        expert: "Provide a detailed summary of this content."
+      };
+      
+      defaultPrompts = {
+        eli5: PROMPTS.eli5,
+        standard: PROMPTS.standard,
+        phd: PROMPTS.expert
+      };
+      
+      return PROMPTS;
+    }
   }
 
-  // Custom prompts (loaded from storage)
-  let customPrompts = { ...defaultPrompts }
+  // Custom prompts (loaded from storage after initialization)
+  let customPrompts = {}
   
   
   // Complexity levels
@@ -866,7 +900,11 @@ function initializeExtension() {
       chrome.storage.local.get(['customPrompts'], (result) => {
         if (result.customPrompts) {
           customPrompts = { ...defaultPrompts, ...result.customPrompts }
+        } else {
+          // Initialize with default prompts if no custom prompts exist
+          customPrompts = { ...defaultPrompts }
         }
+        console.log('📝 Loaded custom prompts:', customPrompts);
         resolve()
       })
     })
@@ -1030,7 +1068,10 @@ function initializeExtension() {
     if (response && response.tabId) {
       currentTabId = response.tabId
 
-      // Load custom prompts first
+      // Load centralized prompts first
+      await loadPrompts()
+      
+      // Load custom prompts
       await loadCustomPrompts()
 
       // Load saved data
@@ -1661,9 +1702,6 @@ function initializeExtension() {
 
   // Custom query functionality
   function initializeCustomQuery() {
-    // Check for pre-selected text when panel opens
-    checkForSelectedText()
-    
     // Toggle custom query container
     customQueryBtn.addEventListener('click', () => {
       const isVisible = !customQueryContainer.classList.contains('hidden')
@@ -1686,33 +1724,6 @@ function initializeExtension() {
     })
   }
 
-  // Check for selected text and pre-fill if available
-  function checkForSelectedText() {
-    console.log('📨 Panel: Requesting selected text from content script...')
-    // Send message to content script to get selected text
-    window.parent.postMessage({ action: "getSelectedText" }, "*")
-  }
-
-  // Listen for selected text response
-  window.addEventListener("message", (event) => {
-    if (event.data.action === "selectedTextResult") {
-      console.log('📥 Panel: Received selected text response:', `"${event.data.selectedText}"`)
-      if (event.data.selectedText && event.data.selectedText.trim()) {
-        console.log('✅ Pre-filling custom query with selected text')
-        // Pre-fill and show custom query if there's selected text
-        customQueryInput.value = `Focus on this part: "${event.data.selectedText}"`
-        customQueryContainer.classList.remove('hidden')
-        customQueryBtn.classList.add('active')
-        
-        // Auto-resize the textarea to fit the content
-        customQueryInput.style.height = 'auto'
-        customQueryInput.style.height = Math.max(100, customQueryInput.scrollHeight) + 'px'
-        console.log('✅ Custom query container opened and pre-filled')
-      } else {
-        console.log('❌ No selected text found or empty text')
-      }
-    }
-  })
 
   // Update the summarize request to include custom query
   function getCustomQuery() {

@@ -1,0 +1,5 @@
+{
+  "eli5": "Create a short, simple summary of the content from {url} that someon who doesn't know much about the field would understand. Format as 3-5 bullet points covering the most important ideas. Use simple words and short sentences. Start directly with bullet points - no introduction needed.",
+  "standard": "Summarize the content from {url} using insightful bullet points. Focus on key takeaways, main arguments, and practical insights that readers can apply. Organize information clearly with 5-8 comprehensive bullet points. Ensure the summary is complete and doesn't end abruptly.",
+  "expert": "Provide a comprehensive analytical summary of the content from {url} using detailed bullet points. Include critical analysis, implications, technical context, and scholarly insights. Use 8-12 in-depth bullet points with sub-points where appropriate. Ensure thorough coverage without abrupt endings - complete all important aspects of the content."
+}

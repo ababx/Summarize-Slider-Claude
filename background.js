@@ -115,66 +115,9 @@ async function summarizeContent(content, url, complexity = "standard", model = "
   }
 }
 
-// When the extension icon is clicked, first capture selected text, then toggle the panel
-chrome.action.onClicked.addListener(async (tab) => {
-  try {
-    // Inject a script to capture selected text immediately
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        // Capture selection immediately, before any DOM changes
-        let selectedText = "";
-        
-        try {
-          // Try multiple methods to get selected text
-          const selection = window.getSelection();
-          if (selection && selection.toString().trim()) {
-            selectedText = selection.toString().trim();
-            console.log('🎯 Background script captured selection:', selectedText);
-            return selectedText;
-          }
-          
-          const docSelection = document.getSelection();
-          if (docSelection && docSelection.toString().trim()) {
-            selectedText = docSelection.toString().trim();
-            console.log('🎯 Background script captured doc selection:', selectedText);
-            return selectedText;
-          }
-          
-          // Check for form element selections
-          const activeElement = document.activeElement;
-          if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-            const start = activeElement.selectionStart;
-            const end = activeElement.selectionEnd;
-            if (start !== undefined && end !== undefined && start !== end) {
-              selectedText = activeElement.value.substring(start, end).trim();
-              console.log('🎯 Background script captured form selection:', selectedText);
-              return selectedText;
-            }
-          }
-        } catch (e) {
-          console.log('🎯 Background script selection capture error:', e);
-        }
-        
-        console.log('🎯 Background script found no selection');
-        return "";
-      }
-    });
-    
-    const selectedText = results[0]?.result || "";
-    console.log('🎯 Background: Captured selected text:', `"${selectedText}"`);
-    
-    // Send the toggle message with the captured text
-    chrome.tabs.sendMessage(tab.id, { 
-      action: "togglePanel", 
-      selectedText: selectedText 
-    });
-    
-  } catch (error) {
-    console.error('🎯 Error capturing selected text:', error);
-    // Fallback to normal toggle
-    chrome.tabs.sendMessage(tab.id, { action: "togglePanel" });
-  }
+// When the extension icon is clicked, toggle the panel
+chrome.action.onClicked.addListener((tab) => {
+  chrome.tabs.sendMessage(tab.id, { action: "togglePanel" })
 })
 
 // Log when the extension is installed
