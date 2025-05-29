@@ -51,66 +51,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
     }
 
-    // If no model specified (original behavior), use exact original working code
+    // Model is always provided by the extension now (gemini-flash-2.5 is the default)
     if (!model) {
-      console.log("Using default Perplexity model (no model parameter)")
-      try {
-        // Create a prompt based on the complexity level using centralized prompts
-        const complexityLevel = complexity === "phd" ? "expert" : complexity;
-        let basePrompt = getPrompt(complexityLevel, url);
-        
-        // Add custom query instructions if provided
-        if (customQuery) {
-          basePrompt = `${basePrompt}\n\nAdditional user instructions: ${customQuery}`;
-          console.log("Added custom query to default model prompt:", customQuery);
-        }
-        
-        const prompt = `${basePrompt}\n\n${text}`
-
-        // Use direct Perplexity API call to avoid SDK issues
-        const perplexityApiKey = process.env.PERPLEXITY_API_KEY
-        
-        if (!perplexityApiKey) {
-          throw new Error("PERPLEXITY_API_KEY environment variable is not set")
-        }
-        
-        console.log("Using direct Perplexity API call")
-        
-        // Direct API call to Perplexity
-        const response = await fetch("https://api.perplexity.ai/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${perplexityApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "sonar-pro",
-            messages: [
-              {
-                role: "user",
-                content: prompt
-              }
-            ],
-            max_tokens: 1000,
-            temperature: 0.2,
-            top_p: 0.9
-          })
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Perplexity API error ${response.status}: ${errorText}`)
-        }
-
-        const data = await response.json()
-        const summaryText = data.choices?.[0]?.message?.content || "No summary generated. Try again."
-
-        // Return the summary
-        return NextResponse.json({ summary: summaryText })
-      } catch (defaultError) {
-        console.error("Error in default Perplexity processing:", defaultError)
-        return NextResponse.json({ error: `Default model failed: ${defaultError.message}` }, { status: 500 })
-      }
+      return NextResponse.json({ error: "No model specified" }, { status: 400 })
     }
 
     // Model configuration mapping
