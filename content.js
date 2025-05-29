@@ -74,31 +74,7 @@ if (!document.getElementById("summarizer-panel-container")) {
   
   // Function to open the panel
   function openPanel() {
-    // Try multiple methods to capture selected text
-    let selectedText = ""
-    
-    // Method 1: document.getSelection()
-    if (document.getSelection) {
-      selectedText = document.getSelection().toString().trim()
-    }
-    
-    // Method 2: window.getSelection() as fallback
-    if (!selectedText && window.getSelection) {
-      selectedText = window.getSelection().toString().trim()
-    }
-    
-    // Method 3: Check for activeElement selection
-    if (!selectedText && document.activeElement) {
-      const active = document.activeElement
-      if (active.selectionStart !== undefined && active.selectionEnd !== undefined) {
-        selectedText = active.value.substring(active.selectionStart, active.selectionEnd).trim()
-      }
-    }
-    
-    storedSelectedText = selectedText
-    console.log('🔍 Panel opening - captured selected text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
-    console.log('🔍 document.getSelection():', document.getSelection ? document.getSelection().toString() : 'not available')
-    console.log('🔍 window.getSelection():', window.getSelection ? window.getSelection().toString() : 'not available')
+    console.log('🔍 Panel opening - using stored selected text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
     
     iframe.style.transform = "translateX(0)"
     overlay.style.opacity = "1"
@@ -131,7 +107,27 @@ if (!document.getElementById("summarizer-panel-container")) {
     }
     
     if (event.data.action === "getSelectedText") {
-      // Use stored selected text instead of current selection
+      // Try to get fresh selected text if stored text is empty
+      if (!storedSelectedText) {
+        console.log('📤 Stored text is empty, trying to get fresh selection...')
+        let freshSelection = ""
+        
+        try {
+          if (document.getSelection) {
+            freshSelection = document.getSelection().toString().trim()
+            console.log('📤 Fresh document.getSelection():', `"${freshSelection}"`)
+          }
+          if (!freshSelection && window.getSelection) {
+            freshSelection = window.getSelection().toString().trim()
+            console.log('📤 Fresh window.getSelection():', `"${freshSelection}"`)
+          }
+        } catch (error) {
+          console.log('📤 Error getting fresh selection:', error)
+        }
+        
+        storedSelectedText = freshSelection
+      }
+      
       console.log('📤 Content script: Panel requested selected text, returning:', `"${storedSelectedText}"`)
       iframe.contentWindow.postMessage(
         {
@@ -278,23 +274,113 @@ if (!document.getElementById("summarizer-panel-container")) {
     return content
   }
 
+  // Function to capture selected text using comprehensive methods
+  function captureSelectedTextComprehensive() {
+    let selectedText = ""
+    
+    console.log('🔍 Starting comprehensive text selection capture...')
+    
+    // Method 1: Standard document.getSelection()
+    try {
+      const docSelection = document.getSelection()
+      if (docSelection && docSelection.rangeCount > 0) {
+        selectedText = docSelection.toString().trim()
+        if (selectedText) {
+          console.log('✅ Method 1 (document.getSelection) captured:', `"${selectedText}"`)
+          return selectedText
+        }
+      }
+    } catch (e) {
+      console.log('❌ Method 1 failed:', e)
+    }
+    
+    // Method 2: Window.getSelection()
+    try {
+      const winSelection = window.getSelection()
+      if (winSelection && winSelection.rangeCount > 0) {
+        selectedText = winSelection.toString().trim()
+        if (selectedText) {
+          console.log('✅ Method 2 (window.getSelection) captured:', `"${selectedText}"`)
+          return selectedText
+        }
+      }
+    } catch (e) {
+      console.log('❌ Method 2 failed:', e)
+    }
+    
+    // Method 3: Check active element for form inputs
+    try {
+      const activeElement = document.activeElement
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        const start = activeElement.selectionStart
+        const end = activeElement.selectionEnd
+        if (start !== undefined && end !== undefined && start !== end) {
+          selectedText = activeElement.value.substring(start, end).trim()
+          if (selectedText) {
+            console.log('✅ Method 3 (form input) captured:', `"${selectedText}"`)
+            return selectedText
+          }
+        }
+      }
+    } catch (e) {
+      console.log('❌ Method 3 failed:', e)
+    }
+    
+    // Method 4: Check contenteditable elements
+    try {
+      const activeElement = document.activeElement
+      if (activeElement && activeElement.isContentEditable) {
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          if (range && !range.collapsed) {
+            selectedText = range.toString().trim()
+            if (selectedText) {
+              console.log('✅ Method 4 (contenteditable) captured:', `"${selectedText}"`)
+              return selectedText
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('❌ Method 4 failed:', e)
+    }
+    
+    // Method 5: Check for any ranges in the selection (non-destructive)
+    try {
+      const selection = document.getSelection()
+      if (selection) {
+        for (let i = 0; i < selection.rangeCount; i++) {
+          const range = selection.getRangeAt(i)
+          if (range && !range.collapsed) {
+            selectedText = range.cloneContents().textContent.trim()
+            if (selectedText) {
+              console.log('✅ Method 5 (range cloning) captured:', `"${selectedText}"`)
+              return selectedText
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('❌ Method 5 failed:', e)
+    }
+    
+    console.log('❌ No text selection found with any method')
+    return ""
+  }
+
   // Add this event listener at the end of the file to handle messages from the background script
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === "togglePanel") {
-      // Capture selected text immediately when toggle is requested
-      let selectedText = ""
-      
-      // Try multiple methods to capture selected text
-      if (document.getSelection) {
-        selectedText = document.getSelection().toString().trim()
+      // Use the selected text captured by the background script, or fallback to local capture
+      if (request.selectedText) {
+        storedSelectedText = request.selectedText;
+        console.log('🎯 Content: Using background-captured text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
+      } else {
+        // Fallback to local capture
+        storedSelectedText = captureSelectedTextComprehensive()
+        console.log('🎯 Content: Using local-captured text:', `"${storedSelectedText}"`, 'Length:', storedSelectedText.length)
       }
-      if (!selectedText && window.getSelection) {
-        selectedText = window.getSelection().toString().trim()
-      }
-      
-      // Store the selection before any UI changes
-      storedSelectedText = selectedText
-      console.log('🎯 Extension toggled - immediately captured text:', `"${storedSelectedText}"`)
       
       if (iframe.style.transform === "translateX(0px)") {
         closePanel()

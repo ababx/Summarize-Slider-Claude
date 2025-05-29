@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "screenshot": "node take-screenshot.js",
+    "screenshot:targeted": "node take-screenshot.js targeted"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
@@ -69,6 +71,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8",
+    "puppeteer": "^24.9.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }
