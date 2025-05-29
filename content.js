@@ -101,6 +101,13 @@ if (!document.getElementById("summarizer-panel-container")) {
       closePanel()
     }
     
+    if (event.data.action === "navigateToUrl") {
+      // Navigate to the specified URL
+      const url = event.data.url
+      if (url) {
+        window.location.href = url
+      }
+    }
 
     if (event.data.action === "extractContent") {
       try {
@@ -112,6 +119,8 @@ if (!document.getElementById("summarizer-panel-container")) {
             {
               action: "summaryResult",
               error: "Could not extract content from this page.",
+              title: document.title,
+              url: window.location.href
             },
             "*",
           )
@@ -163,7 +172,9 @@ if (!document.getElementById("summarizer-panel-container")) {
                 action: "summaryResult",
                 summary: response.summary,
                 error: response.error,
-                tabId: currentTabId, // Pass the tab ID
+                tabId: currentTabId,
+                title: document.title,
+                url: window.location.href
               },
               "*",
             )
@@ -174,6 +185,8 @@ if (!document.getElementById("summarizer-panel-container")) {
           {
             action: "summaryResult",
             error: error.message || "An error occurred while summarizing the page.",
+            title: document.title,
+            url: window.location.href
           },
           "*",
         )

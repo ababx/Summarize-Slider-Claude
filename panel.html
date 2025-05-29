@@ -12,6 +12,12 @@
   <div class="summarizer-panel">
     <div class="panel-header">
       <div class="header-main">
+        <button id="historyBtn" class="history-btn" title="View summary history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
         <h1 class="panel-title">Summarize Slider</h1>
       </div>
       <div class="header-actions">
@@ -38,6 +44,30 @@
             <path opacity="0.45" d="M1.5 1.5L16.4999 16.5M16.5 1.5L1.50012 16.5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
           </svg>
         </button>
+      </div>
+    </div>
+
+    <!-- History Popup Overlay (Hidden by default) -->
+    <div class="history-overlay hidden" id="historyOverlay">
+      <div class="history-popup">
+        <div class="history-header">
+          <h3>Recent Summaries</h3>
+          <div class="history-actions">
+            <button id="clearHistoryBtn" class="clear-history-btn">Clear</button>
+            <button id="closeHistoryBtn" class="close-history-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="history-content">
+          <div class="history-list" id="historyList">
+            <div class="history-empty">
+              <p>No summaries yet. Start by summarizing a page!</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -121,6 +121,133 @@ function initializeExtension() {
   // Custom prompts (loaded from storage after initialization)
   let customPrompts = {}
   
+  // History functionality
+  let summaryHistory = []
+  const MAX_HISTORY_ITEMS = 50
+  
+  // Function to add item to history
+  function addToHistory(title, url) {
+    const timestamp = Date.now()
+    const historyItem = {
+      title: title || 'Untitled Page',
+      url: url,
+      timestamp: timestamp,
+      id: `history_${timestamp}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    
+    // Remove existing entry for same URL to avoid duplicates
+    summaryHistory = summaryHistory.filter(item => item.url !== url)
+    
+    // Add to beginning of array (most recent first)
+    summaryHistory.unshift(historyItem)
+    
+    // Limit to MAX_HISTORY_ITEMS
+    if (summaryHistory.length > MAX_HISTORY_ITEMS) {
+      summaryHistory = summaryHistory.slice(0, MAX_HISTORY_ITEMS)
+    }
+    
+    // Save to storage
+    chrome.storage.local.set({ summaryHistory: summaryHistory })
+    
+    // Update UI
+    renderHistoryList()
+    
+    console.log('📚 Added to history:', title, url)
+  }
+  
+  // Function to load history from storage
+  async function loadHistory() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['summaryHistory'], (result) => {
+        summaryHistory = result.summaryHistory || []
+        renderHistoryList()
+        resolve()
+      })
+    })
+  }
+  
+  // Function to clear all history
+  function clearHistory() {
+    summaryHistory = []
+    chrome.storage.local.remove(['summaryHistory'])
+    renderHistoryList()
+    console.log('📚 History cleared')
+  }
+  
+  // Function to render history list
+  function renderHistoryList() {
+    const historyList = document.getElementById('historyList')
+    
+    if (summaryHistory.length === 0) {
+      historyList.innerHTML = `
+        <div class="history-empty">
+          <p>No summaries yet. Start by summarizing a page!</p>
+        </div>
+      `
+      return
+    }
+    
+    const historyItems = summaryHistory.map(item => {
+      const date = new Date(item.timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      
+      // Truncate URL for display
+      const displayUrl = item.url.length > 60 ? 
+        item.url.substring(0, 57) + '...' : 
+        item.url
+      
+      // Truncate title for display
+      const displayTitle = item.title.length > 80 ? 
+        item.title.substring(0, 77) + '...' : 
+        item.title
+      
+      return `
+        <div class="history-item" data-url="${item.url}" data-title="${item.title}">
+          <div class="history-title">${displayTitle}</div>
+          <div class="history-url">${displayUrl}</div>
+          <div class="history-date">${date}</div>
+        </div>
+      `
+    }).join('')
+    
+    historyList.innerHTML = historyItems
+    
+    // Add click listeners to history items
+    historyList.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const url = item.dataset.url
+        const title = item.dataset.title
+        console.log('📚 Clicked history item:', title, url)
+        
+        // Navigate to the URL
+        window.parent.postMessage({ action: "navigateToUrl", url: url }, "*")
+        
+        // Close history popup
+        toggleHistoryPopup(false)
+      })
+    })
+  }
+  
+  // Function to toggle history popup
+  function toggleHistoryPopup(show = null) {
+    const historyOverlay = document.getElementById('historyOverlay')
+    const historyBtn = document.getElementById('historyBtn')
+    
+    const isVisible = !historyOverlay.classList.contains('hidden')
+    const shouldShow = show !== null ? show : !isVisible
+    
+    if (shouldShow) {
+      historyOverlay.classList.remove('hidden')
+      historyBtn.classList.add('active')
+    } else {
+      historyOverlay.classList.add('hidden')
+      historyBtn.classList.remove('active')
+    }
+  }
   
   // Complexity levels
   const complexityLevels = ["eli5", "standard", "phd"]
@@ -1073,6 +1200,9 @@ function initializeExtension() {
       
       // Load custom prompts
       await loadCustomPrompts()
+      
+      // Load history
+      await loadHistory()
 
       // Load saved data
       chrome.storage.local.get([
@@ -1621,6 +1751,15 @@ function initializeExtension() {
           chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: summaryData })
         }
         
+        // Add to history with page info from summaryResult
+        console.log('📚 Summary completed - checking history data:', { title: event.data.title, url: event.data.url })
+        if (event.data.title && event.data.url) {
+          console.log('📚 Adding to history:', event.data.title, event.data.url)
+          addToHistory(event.data.title, event.data.url)
+        } else {
+          console.log('📚 Missing title or URL for history')
+        }
+        
         // Update the usage counter display after successful summary
         updateSummarizeSection().catch(console.error)
       }
@@ -1650,6 +1789,42 @@ function initializeExtension() {
   const modelSelectorPopup = modelSelectorOverlay.querySelector('.model-selector-popup')
   if (modelSelectorPopup) {
     modelSelectorPopup.addEventListener("click", (e) => {
+      e.stopPropagation()
+    })
+  }
+
+  // History button event listeners
+  const historyBtn = document.getElementById('historyBtn')
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn')
+  const closeHistoryBtn = document.getElementById('closeHistoryBtn')
+  const historyOverlay = document.getElementById('historyOverlay')
+  
+  historyBtn.addEventListener('click', () => {
+    toggleHistoryPopup()
+  })
+  
+  clearHistoryBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    if (confirm('Are you sure you want to clear all summary history?')) {
+      clearHistory()
+    }
+  })
+  
+  closeHistoryBtn.addEventListener('click', () => {
+    toggleHistoryPopup(false)
+  })
+  
+  // Close history popup when clicking overlay background
+  historyOverlay.addEventListener('click', (e) => {
+    if (e.target === historyOverlay) {
+      toggleHistoryPopup(false)
+    }
+  })
+  
+  // Prevent clicks inside the popup from closing it
+  const historyPopup = historyOverlay.querySelector('.history-popup')
+  if (historyPopup) {
+    historyPopup.addEventListener('click', (e) => {
       e.stopPropagation()
     })
   }
