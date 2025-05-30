@@ -1927,20 +1927,9 @@ function initializeExtension() {
     console.log('Has user API key for current provider:', hasUserApiKey)
     console.log('Is system default:', isUsingSystemDefault)
     
-    // Chat is available if user has API key for any provider (not just current one)
-    // Check if user has any API key at all
-    let hasAnyApiKey = false
-    for (const providerKey of Object.keys(providers)) {
-      const providerObj = providers[providerKey]
-      if (await hasApiKey(providerObj.keyName)) {
-        hasAnyApiKey = true
-        break
-      }
-    }
+    // Chat is available if user has API key AND is using a non-system-default model
+    const chatAvailable = hasUserApiKey && !isUsingSystemDefault
     
-    const chatAvailable = hasAnyApiKey
-    
-    console.log('Has any API key:', hasAnyApiKey)
     console.log('Chat available:', chatAvailable)
     console.log('========================')
     
@@ -1969,40 +1958,13 @@ function initializeExtension() {
     const typingId = addChatMessage('assistant', '...', true)
     
     try {
-      // Find a model that has an API key available
-      let selectedModel = null
-      let apiKey = null
+      // Use the current selected model (which should have an API key if chat is available)
+      const selectedModel = models.find(m => m.id === summarizeDefault)
+      const provider = providers[selectedModel?.provider]
+      const apiKey = await getApiKey(provider.keyName)
       
-      // First try current default model if it has an API key
-      const defaultModel = models.find(m => m.id === summarizeDefault)
-      if (defaultModel && !defaultModel.isSystemDefault) {
-        const provider = providers[defaultModel.provider]
-        if (provider) {
-          const key = await getApiKey(provider.keyName)
-          if (key) {
-            selectedModel = defaultModel
-            apiKey = key
-          }
-        }
-      }
-      
-      // If default model doesn't have API key, find any model that does
-      if (!selectedModel) {
-        for (const model of models.filter(m => !m.isSystemDefault)) {
-          const provider = providers[model.provider]
-          if (provider) {
-            const key = await getApiKey(provider.keyName)
-            if (key) {
-              selectedModel = model
-              apiKey = key
-              break
-            }
-          }
-        }
-      }
-      
-      if (!selectedModel || !apiKey) {
-        throw new Error('No API key available for chat')
+      if (!selectedModel || !apiKey || selectedModel.isSystemDefault) {
+        throw new Error('Chat requires a user API key and non-system model')
       }
       
       // Send chat request
