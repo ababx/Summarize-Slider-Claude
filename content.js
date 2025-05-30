@@ -162,7 +162,6 @@ if (!document.getElementById("summarizer-panel-container")) {
             model: event.data.model,
             apiKey: event.data.apiKey,
             customPrompt: event.data.customPrompt,
-            customQuery: event.data.customQuery,
             tokenLimit: event.data.tokenLimit,
             tabId: currentTabId, // Pass the tab ID
           },
@@ -174,7 +173,8 @@ if (!document.getElementById("summarizer-panel-container")) {
                 error: response.error,
                 tabId: currentTabId,
                 title: document.title,
-                url: window.location.href
+                url: window.location.href,
+                pageContent: content // Include the extracted content for chat
               },
               "*",
             )

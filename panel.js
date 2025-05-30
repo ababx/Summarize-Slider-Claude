@@ -41,10 +41,14 @@ function initializeExtension() {
   const closeButton = document.getElementById("closePanel")
   const sliderThumb = document.getElementById("sliderThumb")
   
-  // Custom query elements
-  const customQueryBtn = document.getElementById("customQueryBtn")
-  const customQueryContainer = document.getElementById("customQueryContainer")
-  const customQueryInput = document.getElementById("customQueryInput")
+  // Chat elements
+  const chatSection = document.getElementById("chatSection")
+  const chatLockedState = document.getElementById("chatLockedState")
+  const chatInputActive = document.getElementById("chatInputActive")
+  const chatInput = document.getElementById("chatInput")
+  const chatSendBtn = document.getElementById("chatSendBtn")
+  const chatMessages = document.getElementById("chatMessages")
+  const chatUnlockBtn = document.getElementById("chatUnlockBtn")
   
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
@@ -338,6 +342,7 @@ function initializeExtension() {
     renderModelsForCurrentProvider()
     updateTopNavModel()
     updateComplexityLabel()
+    updateChatState()
   }
 
   // Mask API key for display
@@ -890,6 +895,7 @@ function initializeExtension() {
       await updateTabIndicators()
       await renderModelsForCurrentProvider()
       updateTopNavModel()
+      updateChatState()
       
       return true
       
@@ -961,6 +967,7 @@ function initializeExtension() {
       
       // Update top nav
       updateTopNavModel()
+      updateChatState()
       
     } catch (error) {
       console.error('Failed to remove API key:', error)
@@ -1345,8 +1352,8 @@ function initializeExtension() {
         // Initialize prompt editor after everything else is loaded
         initializePromptEditor()
         
-        // Initialize custom query functionality
-        initializeCustomQuery()
+        // Initialize chat functionality
+        initializeChat()
       })
     }
   })
@@ -1695,27 +1702,13 @@ function initializeExtension() {
     // Get custom prompt for the selected complexity
     let customPrompt = getCurrentPrompt(complexityLevel)
     
-    // Get custom query if available and modify the prompt to include it
-    const customQuery = getCustomQuery()
-    if (customQuery) {
-      customPrompt = `${customPrompt}\n\nAdditional user instructions: ${customQuery}`
-      console.log('Custom query added:', customQuery)
-      console.log('Combined prompt:', customPrompt)
-    }
-    
-    // Close custom query container after starting summarization
-    if (!customQueryContainer.classList.contains('hidden')) {
-      customQueryContainer.classList.add('hidden')
-      customQueryBtn.classList.remove('active')
-    }
     
     window.parent.postMessage({
       action: "extractContent",
       complexity: complexityLevel,
       model: modelToSend,
       apiKey: apiKey,
-      customPrompt: customPrompt,
-      customQuery: customQuery
+      customPrompt: customPrompt
     }, "*")
   })
 
@@ -1749,6 +1742,11 @@ function initializeExtension() {
           chrome.storage.local.set({ [`summary_${complexityLevel}_${event.data.tabId}`]: summaryData })
         } else if (currentTabId) {
           chrome.storage.local.set({ [`summary_${complexityLevel}_${currentTabId}`]: summaryData })
+        }
+        
+        // Store page content for chat functionality
+        if (event.data.pageContent) {
+          storePageContent(event.data.pageContent)
         }
         
         // Add to history with page info from summaryResult
@@ -1875,37 +1873,166 @@ function initializeExtension() {
     })
   }
 
-  // Custom query functionality
-  function initializeCustomQuery() {
-    // Toggle custom query container
-    customQueryBtn.addEventListener('click', () => {
-      const isVisible = !customQueryContainer.classList.contains('hidden')
+  // Chat functionality
+  let chatConversation = []
+  let pageContent = null
+  
+  function initializeChat() {
+    // Update chat state based on API key availability
+    updateChatState()
+    
+    // Auto-resize chat input
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto'
+      chatInput.style.height = Math.min(120, Math.max(36, chatInput.scrollHeight)) + 'px'
       
-      if (isVisible) {
-        customQueryContainer.classList.add('hidden')
-        customQueryBtn.classList.remove('active')
-      } else {
-        customQueryContainer.classList.remove('hidden')
-        customQueryBtn.classList.add('active')
-        customQueryInput.focus()
+      // Enable/disable send button
+      chatSendBtn.disabled = !chatInput.value.trim()
+    })
+    
+    // Send message on Enter (Shift+Enter for new line)
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        if (!chatSendBtn.disabled) {
+          sendChatMessage()
+        }
       }
     })
     
+    // Send button click
+    chatSendBtn.addEventListener('click', () => {
+      if (!chatSendBtn.disabled) {
+        sendChatMessage()
+      }
+    })
     
-    // Auto-resize textarea based on content
-    customQueryInput.addEventListener('input', () => {
-      customQueryInput.style.height = 'auto'
-      customQueryInput.style.height = Math.max(100, customQueryInput.scrollHeight) + 'px'
+    // Unlock button click
+    chatUnlockBtn.addEventListener('click', () => {
+      modelSelectorOverlay.classList.remove('hidden')
     })
   }
-
-
-  // Update the summarize request to include custom query
-  function getCustomQuery() {
-    if (customQueryContainer.classList.contains('hidden') || !customQueryInput.value.trim()) {
-      return null
+  
+  async function updateChatState() {
+    const defaultModel = models.find(m => m.id === summarizeDefault)
+    const provider = providers[defaultModel?.provider]
+    
+    // Check if user has API key for current model's provider
+    const hasUserApiKey = provider ? await hasApiKey(provider.keyName) : false
+    const isUsingSystemDefault = defaultModel?.isSystemDefault
+    
+    console.log('=== CHAT STATE UPDATE ===')
+    console.log('Default model:', defaultModel)
+    console.log('Provider:', provider)
+    console.log('Has user API key:', hasUserApiKey)
+    console.log('Is system default:', isUsingSystemDefault)
+    console.log('========================')
+    
+    // Chat is available if user has API key OR if not using system default
+    const chatAvailable = hasUserApiKey && !isUsingSystemDefault
+    
+    if (chatAvailable) {
+      chatLockedState.classList.add('hidden')
+      chatInputActive.classList.remove('hidden')
+    } else {
+      chatLockedState.classList.remove('hidden')
+      chatInputActive.classList.add('hidden')
     }
-    return customQueryInput.value.trim()
+  }
+  
+  async function sendChatMessage() {
+    const message = chatInput.value.trim()
+    if (!message || !pageContent) return
+    
+    // Clear input and disable send button
+    chatInput.value = ''
+    chatSendBtn.disabled = true
+    chatInput.style.height = '36px'
+    
+    // Add user message to conversation
+    addChatMessage('user', message)
+    
+    // Show typing indicator
+    const typingId = addChatMessage('assistant', '...', true)
+    
+    try {
+      // Get current model and API key
+      const defaultModel = models.find(m => m.id === summarizeDefault)
+      const provider = providers[defaultModel?.provider]
+      const apiKey = await getApiKey(provider.keyName)
+      
+      // Send chat request
+      const response = await fetch('https://summarize-slider-claude.vercel.app/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          conversation: chatConversation,
+          pageContent: pageContent,
+          model: defaultModel.apiId || defaultModel.id,
+          apiKey: apiKey
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Chat request failed: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Remove typing indicator and add response
+      removeChatMessage(typingId)
+      addChatMessage('assistant', data.response)
+      
+      // Update conversation history
+      chatConversation.push({ role: 'user', content: message })
+      chatConversation.push({ role: 'assistant', content: data.response })
+      
+      // Keep conversation to last 10 messages to avoid token limits
+      if (chatConversation.length > 10) {
+        chatConversation = chatConversation.slice(-10)
+      }
+      
+    } catch (error) {
+      console.error('Chat error:', error)
+      removeChatMessage(typingId)
+      addChatMessage('assistant', 'Sorry, I encountered an error. Please try again.')
+    }
+  }
+  
+  function addChatMessage(role, content, isTyping = false) {
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const messageDiv = document.createElement('div')
+    messageDiv.className = `chat-message chat-message-${role}`
+    messageDiv.id = messageId
+    
+    if (isTyping) {
+      messageDiv.classList.add('typing')
+    }
+    
+    messageDiv.innerHTML = `
+      <div class="chat-message-content">${content}</div>
+    `
+    
+    chatMessages.appendChild(messageDiv)
+    chatMessages.scrollTop = chatMessages.scrollHeight
+    
+    return messageId
+  }
+  
+  function removeChatMessage(messageId) {
+    const messageDiv = document.getElementById(messageId)
+    if (messageDiv) {
+      messageDiv.remove()
+    }
+  }
+  
+  // Store page content when summary is generated
+  function storePageContent(content) {
+    pageContent = content
+    console.log('Stored page content for chat:', content.length, 'characters')
   }
 }
 

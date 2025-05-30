@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey, customPrompt, customQuery } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -39,13 +39,8 @@ export async function POST(req: NextRequest) {
       complexity, 
       model, 
       hasApiKey: !!apiKey,
-      hasCustomPrompt: !!customPrompt,
-      hasCustomQuery: !!customQuery
+      hasCustomPrompt: !!customPrompt
     })
-    
-    if (customQuery) {
-      console.log("Custom query received:", customQuery)
-    }
 
     if (!text) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
@@ -92,12 +87,6 @@ export async function POST(req: NextRequest) {
       // Use centralized prompts
       const complexityLevel = complexity === "phd" ? "expert" : complexity;
       let basePrompt = getPrompt(complexityLevel, url);
-      
-      // Add custom query instructions if provided
-      if (customQuery) {
-        basePrompt = `${basePrompt}\n\nAdditional user instructions: ${customQuery}`;
-        console.log("Added custom query to base prompt:", customQuery);
-      }
       
       prompt = `${basePrompt}\n\n${text}`
     }
