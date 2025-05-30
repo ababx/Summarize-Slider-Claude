@@ -991,6 +991,7 @@ function initializeExtension() {
       modelSelectorOverlay.classList.add('hidden')
       // Refresh the display when closing
       await updateSummarizeSection()
+      updateChatState()
     } else {
       modelSelectorOverlay.classList.remove('hidden')
     }
@@ -1804,14 +1805,18 @@ function initializeExtension() {
   })
 
 
-  closeModelSelector.addEventListener("click", () => {
+  closeModelSelector.addEventListener("click", async () => {
     modelSelectorOverlay.classList.add("hidden")
+    await updateSummarizeSection()
+    updateChatState()
   })
 
   // Close popup when clicking outside the card
-  modelSelectorOverlay.addEventListener("click", (e) => {
+  modelSelectorOverlay.addEventListener("click", async (e) => {
     if (e.target === modelSelectorOverlay) {
       modelSelectorOverlay.classList.add("hidden")
+      await updateSummarizeSection()
+      updateChatState()
     }
   })
 
@@ -2023,7 +2028,7 @@ function initializeExtension() {
       }
       
       // Send chat request
-      const response = await fetch('https://summarize-slider-claude.vercel.app/api/chat', {
+      const response = await fetch('https://v0-chromium-summarizer-extension.vercel.app/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2058,8 +2063,15 @@ function initializeExtension() {
       
     } catch (error) {
       console.error('Chat error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        selectedModel: selectedModel,
+        hasApiKey: !!apiKey,
+        pageContentLength: pageContent?.length
+      })
       removeChatMessage(typingId)
-      addChatMessage('assistant', 'Sorry, I encountered an error. Please try again.')
+      addChatMessage('assistant', `Error: ${error.message}. Check console for details.`)
     }
   }
   
