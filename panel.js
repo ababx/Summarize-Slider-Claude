@@ -1944,7 +1944,14 @@ function initializeExtension() {
   
   async function sendChatMessage() {
     const message = chatInput.value.trim()
-    if (!message || !pageContent) return
+    if (!message) return
+    
+    if (!pageContent) {
+      addChatMessage('assistant', 'Please generate a summary first to enable chat with the page content.')
+      chatInput.value = ''
+      chatSendBtn.disabled = true
+      return
+    }
     
     // Clear input and disable send button
     chatInput.value = ''
