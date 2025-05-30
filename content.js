@@ -192,6 +192,66 @@ if (!document.getElementById("summarizer-panel-container")) {
         )
       }
     }
+    
+    if (event.data.action === "extractContentForChat") {
+      try {
+        // Extract the content from the page for chat
+        const rawContent = extractPageContent()
+
+        if (!rawContent || rawContent.trim() === "") {
+          iframe.contentWindow.postMessage(
+            {
+              action: "chatContentResult",
+              error: "Could not extract content from this page."
+            },
+            "*",
+          )
+          return
+        }
+
+        // Sanitize content before sending
+        const contentSecurity = new (function() {
+          const maxContentLength = 50000
+          const sensitivePatterns = [
+            /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // Credit cards
+            /\b\d{3}-\d{2}-\d{4}\b/g, // SSN
+            /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Emails
+            /\b(?:api[_-]?key|token|password|secret)\s*[:=]\s*['"]\w+['"]/gi // API keys
+          ]
+
+          this.sanitize = function(content) {
+            if (content.length > maxContentLength) {
+              content = content.substring(0, maxContentLength) + '...'
+            }
+            
+            for (const pattern of sensitivePatterns) {
+              content = content.replace(pattern, '[REDACTED]')
+            }
+            
+            return content.replace(/\s+/g, ' ').trim()
+          }
+        })()
+
+        const content = contentSecurity.sanitize(rawContent)
+
+        // Send content directly to panel
+        iframe.contentWindow.postMessage(
+          {
+            action: "chatContentResult",
+            pageContent: content
+          },
+          "*",
+        )
+      } catch (error) {
+        iframe.contentWindow.postMessage(
+          {
+            action: "chatContentResult",
+            error: error.message || "An error occurred while extracting page content for chat."
+          },
+          "*",
+        )
+      }
+    }
   })
 
   // Function to extract the main content from the webpage

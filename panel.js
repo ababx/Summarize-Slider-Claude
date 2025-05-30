@@ -1764,6 +1764,38 @@ function initializeExtension() {
 
       summarizeBtn.disabled = false
     }
+    
+    // Handle chat content extraction response
+    if (event.data.action === "chatContentResult") {
+      if (event.data.error) {
+        // Remove the "Extracting..." message and show error
+        const messages = chatMessages.querySelectorAll('.chat-message')
+        if (messages.length > 0) {
+          messages[messages.length - 1].remove()
+        }
+        addChatMessage('assistant', 'Error extracting page content. Please try again.')
+        pendingChatMessage = null
+      } else if (event.data.pageContent) {
+        // Store content and send the pending message
+        storePageContent(event.data.pageContent)
+        
+        // Remove the "Extracting..." message
+        const messages = chatMessages.querySelectorAll('.chat-message')
+        if (messages.length > 0) {
+          messages[messages.length - 1].remove()
+        }
+        
+        // Send the pending message
+        if (pendingChatMessage) {
+          const messageToSend = pendingChatMessage
+          pendingChatMessage = null
+          
+          // Add user message and process it
+          addChatMessage('user', messageToSend)
+          processChatMessage(messageToSend)
+        }
+      }
+    }
   })
 
   // Model selector popup handlers
@@ -1876,6 +1908,7 @@ function initializeExtension() {
   // Chat functionality
   let chatConversation = []
   let pageContent = null
+  let pendingChatMessage = null
   
   function initializeChat() {
     // Update chat state based on API key availability
@@ -1946,10 +1979,20 @@ function initializeExtension() {
     const message = chatInput.value.trim()
     if (!message) return
     
+    // If no page content yet, extract it now
     if (!pageContent) {
-      addChatMessage('assistant', 'Please generate a summary first to enable chat with the page content.')
+      // Request page content extraction from content script
+      window.parent.postMessage({
+        action: "extractContentForChat"
+      }, "*")
+      
+      // Show temporary message
+      addChatMessage('assistant', 'Extracting page content...')
       chatInput.value = ''
       chatSendBtn.disabled = true
+      
+      // Store the message to send after content is extracted
+      pendingChatMessage = message
       return
     }
     
@@ -1961,6 +2004,11 @@ function initializeExtension() {
     // Add user message to conversation
     addChatMessage('user', message)
     
+    // Process the message
+    processChatMessage(message)
+  }
+  
+  async function processChatMessage(message) {
     // Show typing indicator
     const typingId = addChatMessage('assistant', '...', true)
     
