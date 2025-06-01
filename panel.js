@@ -1916,6 +1916,13 @@ function initializeExtension() {
   let pendingChatMessage = null
   
   function initializeChat() {
+    console.log('=== CHAT INITIALIZATION ===')
+    console.log('chatLockedState found:', !!chatLockedState)
+    console.log('chatInputActive found:', !!chatInputActive)
+    console.log('chatInput found:', !!chatInput)
+    console.log('chatSendBtn found:', !!chatSendBtn)
+    console.log('============================')
+    
     // Update chat state based on API key availability
     updateChatState()
     
@@ -1969,14 +1976,28 @@ function initializeExtension() {
     const chatAvailable = hasUserApiKey && !isUsingSystemDefault
     
     console.log('Chat available:', chatAvailable)
+    console.log('chatLockedState element:', chatLockedState)
+    console.log('chatInputActive element:', chatInputActive)
     console.log('========================')
     
     if (chatAvailable) {
-      chatLockedState.classList.add('hidden')
-      chatInputActive.classList.remove('hidden')
+      console.log('Attempting to hide locked state and show active state')
+      if (chatLockedState) {
+        chatLockedState.classList.add('hidden')
+        console.log('Hidden locked state, classes:', chatLockedState.className)
+      }
+      if (chatInputActive) {
+        chatInputActive.classList.remove('hidden')
+        console.log('Shown active state, classes:', chatInputActive.className)
+      }
     } else {
-      chatLockedState.classList.remove('hidden')
-      chatInputActive.classList.add('hidden')
+      console.log('Attempting to show locked state and hide active state')
+      if (chatLockedState) {
+        chatLockedState.classList.remove('hidden')
+      }
+      if (chatInputActive) {
+        chatInputActive.classList.add('hidden')
+      }
     }
   }
   
