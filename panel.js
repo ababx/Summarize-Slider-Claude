@@ -2031,18 +2031,40 @@ function initializeExtension() {
       console.log('Current usage:', summarizeUsage)
       console.log('========================')
       
-      // Send chat request
-      const response = await fetch('https://summarize-slider-claude.vercel.app/api/chat', {
+      // Build chat prompt using conversation history
+      let chatPrompt = `You are a helpful assistant answering questions about this webpage content. Be conversational and helpful.
+
+Page Content:
+${pageContent}
+
+`
+      
+      // Add conversation history
+      if (chatConversation.length > 0) {
+        chatPrompt += "Previous conversation:\n"
+        chatConversation.forEach(msg => {
+          chatPrompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`
+        })
+        chatPrompt += "\n"
+      }
+      
+      chatPrompt += `User: ${message}
+
+Please respond naturally as a helpful assistant.`
+
+      // Send request to summarize endpoint with chat prompt
+      const response = await fetch('https://summarize-slider-claude.vercel.app/api/summarize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: message,
-          conversation: chatConversation,
-          pageContent: pageContent,
+          text: pageContent,
+          url: window.location.href,
+          complexity: 'standard',
           model: defaultModel.isSystemDefault ? defaultModel.id : (defaultModel.apiId || defaultModel.id),
-          apiKey: apiKey
+          apiKey: apiKey,
+          customPrompt: chatPrompt
         })
       })
       
@@ -2054,11 +2076,11 @@ function initializeExtension() {
       
       // Remove typing indicator and add response
       removeChatMessage(typingId)
-      addChatMessage('assistant', data.response)
+      addChatMessage('assistant', data.summary)
       
       // Update conversation history
       chatConversation.push({ role: 'user', content: message })
-      chatConversation.push({ role: 'assistant', content: data.response })
+      chatConversation.push({ role: 'assistant', content: data.summary })
       
       // Keep conversation to last 10 messages to avoid token limits
       if (chatConversation.length > 10) {
@@ -2087,8 +2109,6 @@ function initializeExtension() {
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        selectedModel: selectedModel,
-        hasApiKey: !!apiKey,
         pageContentLength: pageContent?.length
       })
       removeChatMessage(typingId)
