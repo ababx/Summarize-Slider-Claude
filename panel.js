@@ -425,10 +425,9 @@ function initializeExtension() {
         }
         try {
           // Simple base64 decode
-          let apiKey = atob(encryptedKey)
-          // Clean any problematic characters that might have been introduced during encoding
-          apiKey = apiKey.replace(/Â/g, '').replace(/[^\x20-\x7E]/g, '')
+          const apiKey = atob(encryptedKey)
           console.log('Retrieved API key preview:', apiKey.substring(0, 10) + '...')
+          console.log('API key length after decode:', apiKey.length)
           resolve(apiKey)
         } catch (error) {
           console.error('Failed to decode API key:', error)
@@ -2043,6 +2042,14 @@ function initializeExtension() {
       const selectedModel = models.find(m => m.id === summarizeDefault)
       const provider = providers[selectedModel?.provider]
       const apiKey = await getApiKey(provider.keyName)
+      
+      console.log('=== CHAT API REQUEST DEBUG ===')
+      console.log('Selected model:', selectedModel)
+      console.log('Provider:', provider)
+      console.log('API key length:', apiKey?.length)
+      console.log('API key prefix:', apiKey?.substring(0, 10))
+      console.log('Model API ID:', selectedModel.apiId || selectedModel.id)
+      console.log('================================')
       
       if (!selectedModel || !apiKey || selectedModel.isSystemDefault) {
         throw new Error('Chat requires a user API key and non-system model')
