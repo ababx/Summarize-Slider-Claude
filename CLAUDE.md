@@ -37,7 +37,7 @@ Note: The Chrome extension uses static files and requires no build process. Load
 
 ### Next.js API Backend
 - `app/api/summarize/route.ts` - Main summarization endpoint supporting multiple AI providers
-- Deployed to Vercel at `v0-chromium-summarizer-extension.vercel.app`
+- Deployed to Vercel at `summarize-slider-claude.vercel.app`
 - Handles three complexity levels with different prompt engineering and dynamic token limits
 - Supports custom prompts with {url} placeholder replacement
 

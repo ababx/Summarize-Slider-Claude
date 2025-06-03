@@ -2056,7 +2056,7 @@ function initializeExtension() {
       }
       
       // Send chat request
-      const response = await fetch('https://v0-chromium-summarizer-extension.vercel.app/api/chat', {
+      const response = await fetch('https://summarize-slider-claude.vercel.app/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
