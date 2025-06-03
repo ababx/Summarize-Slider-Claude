@@ -342,7 +342,6 @@ function initializeExtension() {
     renderModelsForCurrentProvider()
     updateTopNavModel()
     updateComplexityLabel()
-    updateChatState()
   }
 
   // Mask API key for display
@@ -894,7 +893,6 @@ function initializeExtension() {
       await updateTabIndicators()
       await renderModelsForCurrentProvider()
       updateTopNavModel()
-      updateChatState()
       
       return true
       
@@ -966,7 +964,6 @@ function initializeExtension() {
       
       // Update top nav
       updateTopNavModel()
-      updateChatState()
       
     } catch (error) {
       console.error('Failed to remove API key:', error)
@@ -990,7 +987,6 @@ function initializeExtension() {
       modelSelectorOverlay.classList.add('hidden')
       // Refresh the display when closing
       await updateSummarizeSection()
-      updateChatState()
     } else {
       modelSelectorOverlay.classList.remove('hidden')
     }
@@ -1747,6 +1743,8 @@ function initializeExtension() {
         // Store page content for chat functionality
         if (event.data.pageContent) {
           storePageContent(event.data.pageContent)
+          // Update chat state after content is stored
+          updateChatState()
         }
         
         // Add to history with page info from summaryResult
@@ -1776,8 +1774,9 @@ function initializeExtension() {
         addChatMessage('assistant', 'Error extracting page content. Please try again.')
         pendingChatMessage = null
       } else if (event.data.pageContent) {
-        // Store content and send the pending message
+        // Store content and update chat state
         storePageContent(event.data.pageContent)
+        updateChatState()
         
         // Remove the "Extracting..." message
         const messages = chatMessages.querySelectorAll('.chat-message')
@@ -1807,7 +1806,6 @@ function initializeExtension() {
   closeModelSelector.addEventListener("click", async () => {
     modelSelectorOverlay.classList.add("hidden")
     await updateSummarizeSection()
-    updateChatState()
   })
 
   // Close popup when clicking outside the card
@@ -1815,7 +1813,6 @@ function initializeExtension() {
     if (e.target === modelSelectorOverlay) {
       modelSelectorOverlay.classList.add("hidden")
       await updateSummarizeSection()
-      updateChatState()
     }
   })
 
@@ -1915,14 +1912,7 @@ function initializeExtension() {
   let pendingChatMessage = null
   
   function initializeChat() {
-    console.log('=== CHAT INITIALIZATION ===')
-    console.log('chatLockedState found:', !!chatLockedState)
-    console.log('chatInputActive found:', !!chatInputActive)
-    console.log('chatInput found:', !!chatInput)
-    console.log('chatSendBtn found:', !!chatSendBtn)
-    console.log('============================')
-    
-    // Update chat state based on API key availability
+    // Initialize chat state
     updateChatState()
     
     // Auto-resize chat input
@@ -1951,52 +1941,29 @@ function initializeExtension() {
       }
     })
     
-    // Unlock button click
+    // Unlock button click - trigger summarization
     chatUnlockBtn.addEventListener('click', () => {
-      modelSelectorOverlay.classList.remove('hidden')
+      // Scroll to summarize button and highlight it briefly
+      summarizeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      summarizeBtn.style.background = '#3b82f6'
+      setTimeout(() => {
+        summarizeBtn.style.background = ''
+      }, 1000)
     })
   }
   
-  async function updateChatState() {
-    const defaultModel = models.find(m => m.id === summarizeDefault)
-    const provider = providers[defaultModel?.provider]
+  function updateChatState() {
+    // Chat is available when page content exists (after summary generation)
+    const chatAvailable = !!pageContent
     
-    // Check if user has API key for current model's provider
-    const hasUserApiKey = provider ? await hasApiKey(provider.keyName) : false
-    const isUsingSystemDefault = defaultModel?.isSystemDefault
-    
-    console.log('=== CHAT STATE UPDATE ===')
-    console.log('Default model:', defaultModel)
-    console.log('Provider:', provider)
-    console.log('Has user API key for current provider:', hasUserApiKey)
-    console.log('Is system default:', isUsingSystemDefault)
-    
-    // Chat is available if user has API key AND is using a non-system-default model
-    const chatAvailable = hasUserApiKey && !isUsingSystemDefault
-    
-    console.log('Chat available:', chatAvailable)
-    console.log('chatLockedState element:', chatLockedState)
-    console.log('chatInputActive element:', chatInputActive)
-    console.log('========================')
+    console.log('Chat available:', chatAvailable, '(page content length:', pageContent?.length, ')')
     
     if (chatAvailable) {
-      console.log('Attempting to hide locked state and show active state')
-      if (chatLockedState) {
-        chatLockedState.classList.add('hidden')
-        console.log('Hidden locked state, classes:', chatLockedState.className)
-      }
-      if (chatInputActive) {
-        chatInputActive.classList.remove('hidden')
-        console.log('Shown active state, classes:', chatInputActive.className)
-      }
+      if (chatLockedState) chatLockedState.classList.add('hidden')
+      if (chatInputActive) chatInputActive.classList.remove('hidden')
     } else {
-      console.log('Attempting to show locked state and hide active state')
-      if (chatLockedState) {
-        chatLockedState.classList.remove('hidden')
-      }
-      if (chatInputActive) {
-        chatInputActive.classList.add('hidden')
-      }
+      if (chatLockedState) chatLockedState.classList.remove('hidden')
+      if (chatInputActive) chatInputActive.classList.add('hidden')
     }
   }
   
@@ -2038,22 +2005,31 @@ function initializeExtension() {
     const typingId = addChatMessage('assistant', '...', true)
     
     try {
-      // Use the current selected model (which should have an API key if chat is available)
-      const selectedModel = models.find(m => m.id === summarizeDefault)
-      const provider = providers[selectedModel?.provider]
-      const apiKey = await getApiKey(provider.keyName)
+      // Use same model/API key logic as summarization
+      const defaultModel = getDefaultModel()
+      const provider = providers[defaultModel.provider]
+      let apiKey = null
       
-      console.log('=== CHAT API REQUEST DEBUG ===')
-      console.log('Selected model:', selectedModel)
-      console.log('Provider:', provider)
-      console.log('API key length:', apiKey?.length)
-      console.log('API key prefix:', apiKey?.substring(0, 10))
-      console.log('Model API ID:', selectedModel.apiId || selectedModel.id)
-      console.log('================================')
-      
-      if (!selectedModel || !apiKey || selectedModel.isSystemDefault) {
-        throw new Error('Chat requires a user API key and non-system model')
+      // Only require API key for non-system models (same as summarization)
+      if (provider && provider.keyName && !defaultModel.isSystemDefault) {
+        apiKey = await getApiKey(provider.keyName)
+        if (!apiKey) {
+          throw new Error(`API key required for ${defaultModel.name}`)
+        }
       }
+      
+      // Check usage limits for system default (same as summarization)
+      const isUsingSystemDefault = defaultModel.isSystemDefault
+      if (isUsingSystemDefault && summarizeUsage >= 25) {
+        throw new Error('Monthly usage limit reached. Add your own API key for unlimited chat.')
+      }
+      
+      console.log('=== CHAT API REQUEST ===')
+      console.log('Model:', defaultModel.name)
+      console.log('Is system default:', isUsingSystemDefault)
+      console.log('Has API key:', !!apiKey)
+      console.log('Current usage:', summarizeUsage)
+      console.log('========================')
       
       // Send chat request
       const response = await fetch('https://summarize-slider-claude.vercel.app/api/chat', {
@@ -2065,7 +2041,7 @@ function initializeExtension() {
           message: message,
           conversation: chatConversation,
           pageContent: pageContent,
-          model: selectedModel.apiId || selectedModel.id,
+          model: defaultModel.isSystemDefault ? defaultModel.id : (defaultModel.apiId || defaultModel.id),
           apiKey: apiKey
         })
       })
@@ -2087,6 +2063,23 @@ function initializeExtension() {
       // Keep conversation to last 10 messages to avoid token limits
       if (chatConversation.length > 10) {
         chatConversation = chatConversation.slice(-10)
+      }
+      
+      // Track usage for system default models (same as summarization)
+      if (isUsingSystemDefault) {
+        summarizeUsage++
+        console.log('Chat usage incremented! New usage:', summarizeUsage)
+        
+        // Save usage and ensure reset date is set for this month
+        const now = new Date()
+        const resetDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        chrome.storage.local.set({ 
+          summarizeUsage,
+          usageResetDate: resetDate.toISOString()
+        })
+        
+        // Update UI to reflect new usage
+        await updateSummarizeSection()
       }
       
     } catch (error) {
