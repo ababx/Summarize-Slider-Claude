@@ -2121,14 +2121,65 @@ Please respond naturally as a helpful assistant.`
       messageDiv.classList.add('typing')
     }
     
+    // Format content based on role
+    let formattedContent = content
+    if (role === 'assistant' && !isTyping) {
+      formattedContent = renderChatMarkdown(content)
+    } else {
+      // For user messages and typing indicators, just escape HTML
+      formattedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+    
     messageDiv.innerHTML = `
-      <div class="chat-message-content">${content}</div>
+      <div class="chat-message-content">${formattedContent}</div>
     `
     
     chatMessages.appendChild(messageDiv)
     chatMessages.scrollTop = chatMessages.scrollHeight
     
     return messageId
+  }
+  
+  // Enhanced markdown renderer for chat messages
+  function renderChatMarkdown(text) {
+    let html = text
+    
+    // First handle code blocks to protect them from other replacements
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/gim, '<pre><code class="language-$1">$2</code></pre>')
+    html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
+    html = html.replace(/`([^`]+)`/gim, '<code class="inline-code">$1</code>')
+    
+    // Handle headers (but smaller for chat)
+    html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>')
+    html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>') 
+    html = html.replace(/^# (.*$)/gim, '<h3>$1</h3>')
+    
+    // Handle bold and italic formatting
+    html = html.replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
+    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    html = html.replace(/\*((?![*\s]).*?(?<![*\s]))\*/gim, '<em>$1</em>')
+    
+    // Handle bullet points
+    html = html.replace(/^[\*\-]\s+(.+)$/gim, '<li>$1</li>')
+    html = html.replace(/^\d+\.\s+(.+)$/gim, '<li class="numbered">$1</li>')
+    
+    // Group consecutive list items
+    html = html.replace(/(<li(?:\s+class="numbered")?>.*?<\/li>)(\s*<li(?:\s+class="numbered")?>.*?<\/li>)*/gim, function(match) {
+      const isNumbered = match.includes('class="numbered"')
+      const tag = isNumbered ? 'ol' : 'ul'
+      return `<${tag}>${match.replace(/\s+class="numbered"/g, '')}</${tag}>`
+    })
+    
+    // Handle line breaks and paragraphs (more conservative for chat)
+    html = html.replace(/\n\n+/gim, '</p><p>')
+    html = html.replace(/\n/gim, '<br>')
+    
+    // Wrap in paragraphs if needed (but not if it's mostly lists/headers)
+    if (!html.includes('<h') && !html.includes('<ul') && !html.includes('<ol') && !html.includes('<pre>')) {
+      html = '<p>' + html + '</p>'
+    }
+    
+    return html
   }
   
   function removeChatMessage(messageId) {
