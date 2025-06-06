@@ -48,7 +48,7 @@ function initializeExtension() {
   const chatInput = document.getElementById("chatInput")
   const chatSendBtn = document.getElementById("chatSendBtn")
   const chatMessages = document.getElementById("chatMessages")
-  const chatUnlockBtn = document.getElementById("chatUnlockBtn")
+  // chatUnlockBtn removed - no longer needed
   
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
@@ -1941,15 +1941,7 @@ function initializeExtension() {
       }
     })
     
-    // Unlock button click - trigger summarization
-    chatUnlockBtn.addEventListener('click', () => {
-      // Scroll to summarize button and highlight it briefly
-      summarizeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      summarizeBtn.style.background = '#3b82f6'
-      setTimeout(() => {
-        summarizeBtn.style.background = ''
-      }, 1000)
-    })
+    // Note: No unlock button needed - banner is purely informational
   }
   
   function updateChatState() {
