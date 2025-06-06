@@ -48,7 +48,7 @@ function initializeExtension() {
   const chatInput = document.getElementById("chatInput")
   const chatSendBtn = document.getElementById("chatSendBtn")
   const chatMessages = document.getElementById("chatMessages")
-  // chatUnlockBtn removed - no longer needed
+  const resizeHandle = document.getElementById("resizeHandle")
   
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
@@ -1350,6 +1350,9 @@ function initializeExtension() {
         
         // Initialize chat functionality
         initializeChat()
+        
+        // Initialize resize functionality
+        initializeResize()
       })
     }
   })
@@ -2139,6 +2142,93 @@ Please respond naturally as a helpful assistant.`
   function storePageContent(content) {
     pageContent = content
     console.log('Stored page content for chat:', content.length, 'characters')
+  }
+  
+  // Resize functionality
+  function initializeResize() {
+    if (!resizeHandle || !chatSection) return
+    
+    let isResizing = false
+    let startY = 0
+    let startHeight = 0
+    
+    // Load saved chat height
+    chrome.storage.local.get(['chatSectionHeight'], (result) => {
+      if (result.chatSectionHeight) {
+        chatSection.style.height = result.chatSectionHeight + 'px'
+      }
+    })
+    
+    // Mouse down on handle
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true
+      startY = e.clientY
+      startHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+      
+      resizeHandle.classList.add('dragging')
+      document.body.style.cursor = 'ns-resize'
+      document.body.style.userSelect = 'none'
+      
+      e.preventDefault()
+    })
+    
+    // Mouse move - resize
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return
+      
+      const deltaY = startY - e.clientY // Inverted because we want up = bigger
+      const newHeight = Math.max(120, Math.min(600, startHeight + deltaY)) // Min 120px, max 600px
+      
+      chatSection.style.height = newHeight + 'px'
+      
+      e.preventDefault()
+    })
+    
+    // Mouse up - stop resizing
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false
+        resizeHandle.classList.remove('dragging')
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+        
+        // Save the new height
+        const currentHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+        chrome.storage.local.set({ chatSectionHeight: currentHeight })
+      }
+    })
+    
+    // Touch events for mobile support
+    resizeHandle.addEventListener('touchstart', (e) => {
+      isResizing = true
+      startY = e.touches[0].clientY
+      startHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+      
+      resizeHandle.classList.add('dragging')
+      e.preventDefault()
+    })
+    
+    document.addEventListener('touchmove', (e) => {
+      if (!isResizing) return
+      
+      const deltaY = startY - e.touches[0].clientY
+      const newHeight = Math.max(120, Math.min(600, startHeight + deltaY))
+      
+      chatSection.style.height = newHeight + 'px'
+      
+      e.preventDefault()
+    })
+    
+    document.addEventListener('touchend', () => {
+      if (isResizing) {
+        isResizing = false
+        resizeHandle.classList.remove('dragging')
+        
+        // Save the new height
+        const currentHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+        chrome.storage.local.set({ chatSectionHeight: currentHeight })
+      }
+    })
   }
 }
 
