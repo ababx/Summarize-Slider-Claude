@@ -1756,7 +1756,7 @@ html, body {
 
 .chat-input-wrapper {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1775,6 +1775,8 @@ html, body {
   max-height: 120px;
   background: transparent;
   font-family: inherit;
+  padding: 4px 0;
+  vertical-align: top;
 }
 
 .chat-input::placeholder {
@@ -1794,6 +1796,7 @@ html, body {
   cursor: pointer;
   transition: background-color 0.2s ease;
   flex-shrink: 0;
+  margin-top: 0;
 }
 
 .chat-send-btn:hover:not(:disabled) {
