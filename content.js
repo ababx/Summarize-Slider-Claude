@@ -3,6 +3,21 @@ if (!document.getElementById("summarizer-panel-container")) {
   // Create container for the panel
   const container = document.createElement("div")
   container.id = "summarizer-panel-container"
+  container.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    pointer-events: none !important;
+    z-index: 2147483647 !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  `
 
   // Create a Shadow DOM root to isolate our styles
   const shadowRoot = container.attachShadow({ mode: "closed" })
@@ -20,6 +35,7 @@ if (!document.getElementById("summarizer-panel-container")) {
     z-index: 2147483646;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.3s ease, visibility 0.3s ease;
   `
 
@@ -27,16 +43,27 @@ if (!document.getElementById("summarizer-panel-container")) {
   const iframe = document.createElement("iframe")
   iframe.id = "summarizer-panel-iframe"
   iframe.style.cssText = `
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 560px;
-    height: 100vh;
-    border: none;
-    z-index: 2147483647;
-    transition: transform 0.3s ease;
-    transform: translateX(100%);
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 560px !important;
+    height: 100vh !important;
+    border: none !important;
+    z-index: 2147483647 !important;
+    transition: transform 0.3s ease !important;
+    transform: translateX(100%) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   `
+  
+  // Additional iframe transparency enforcement
+  iframe.setAttribute('allowtransparency', 'true')
+  iframe.setAttribute('frameborder', '0')
 
   // Get the URL for the panel.html file
   const panelURL = chrome.runtime.getURL("panel.html")
@@ -52,6 +79,12 @@ if (!document.getElementById("summarizer-panel-container")) {
   // Get the current tab ID to use for storage
   let currentTabId = null
   chrome.runtime.sendMessage({ action: "getCurrentTabId" }, (response) => {
+    // Check for extension context invalidation
+    if (chrome.runtime.lastError) {
+      console.error('Extension context invalidated while getting tab ID:', chrome.runtime.lastError.message)
+      return
+    }
+    
     if (response && response.tabId) {
       currentTabId = response.tabId
 
@@ -74,6 +107,7 @@ if (!document.getElementById("summarizer-panel-container")) {
     iframe.style.transform = "translateX(0)"
     overlay.style.opacity = "1"
     overlay.style.visibility = "visible"
+    overlay.style.pointerEvents = "auto"
     if (currentTabId) {
       chrome.storage.local.set({ [`panelVisible_${currentTabId}`]: true })
     }
@@ -84,6 +118,7 @@ if (!document.getElementById("summarizer-panel-container")) {
     iframe.style.transform = "translateX(100%)"
     overlay.style.opacity = "0"
     overlay.style.visibility = "hidden"
+    overlay.style.pointerEvents = "none"
     if (currentTabId) {
       chrome.storage.local.set({ [`panelVisible_${currentTabId}`]: false })
     }
@@ -166,11 +201,25 @@ if (!document.getElementById("summarizer-panel-container")) {
             tabId: currentTabId, // Pass the tab ID
           },
           (response) => {
+            // Check for extension context invalidation
+            if (chrome.runtime.lastError) {
+              iframe.contentWindow.postMessage(
+                {
+                  action: "summaryResult",
+                  error: `Extension context invalidated: ${chrome.runtime.lastError.message}. Please reload the page.`,
+                  title: document.title,
+                  url: window.location.href
+                },
+                "*",
+              )
+              return
+            }
+            
             iframe.contentWindow.postMessage(
               {
                 action: "summaryResult",
-                summary: response.summary,
-                error: response.error,
+                summary: response?.summary,
+                error: response?.error,
                 tabId: currentTabId,
                 title: document.title,
                 url: window.location.href,
@@ -311,6 +360,34 @@ if (!document.getElementById("summarizer-panel-container")) {
     return content
   }
 
+
+  // Add keyboard shortcut listener
+  document.addEventListener("keydown", (event) => {
+    // Check for Ctrl+S (Mac) or Ctrl+Alt+S (Windows/Linux)
+    const isMac = navigator.platform.includes('Mac')
+    let shortcutMatch = false
+    
+    if (isMac) {
+      // Mac: Ctrl+S
+      shortcutMatch = event.ctrlKey && !event.metaKey && !event.altKey && event.key === 's'
+    } else {
+      // Windows/Linux: Ctrl+Alt+S
+      shortcutMatch = event.ctrlKey && event.altKey && !event.metaKey && event.key === 's'
+    }
+    
+    if (shortcutMatch) {
+      // Prevent the default save action
+      event.preventDefault()
+      event.stopPropagation()
+      
+      // Toggle the panel
+      if (iframe.style.transform === "translateX(0px)") {
+        closePanel()
+      } else {
+        openPanel()
+      }
+    }
+  })
 
   // Add this event listener at the end of the file to handle messages from the background script
   chrome.runtime.onMessage.addListener((request) => {

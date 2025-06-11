@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
-  <div class="summarizer-panel">
+  <div class="panel-overlay">
+    <div class="summarizer-panel">
     <div class="panel-header">
       <div class="header-main">
         <button id="historyBtn" class="history-btn" title="View summary history">
@@ -272,49 +273,41 @@
       </div>
     </div>
     
-    <!-- Resize Handle -->
-    <div class="resize-handle" id="resizeHandle">
-      <div class="resize-handle-bar">
-        <div class="resize-handle-dots">
-          <div class="dot"></div>
-          <div class="dot"></div>
-          <div class="dot"></div>
-        </div>
-      </div>
-    </div>
-    
     <!-- Chat Section (Resizable) -->
     <div class="chat-section" id="chatSection">
-      <div class="chat-input-container">
-        <div class="chat-locked-state" id="chatLockedState">
-          <div class="chat-lock-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="chat-lock-content">
-            <div class="chat-lock-title">Chat with this page</div>
+      <!-- Resize Handle -->
+      <div class="resize-handle" id="resizeHandle">
+        <div class="resize-handle-bar">
+          <div class="resize-handle-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
           </div>
         </div>
-        
-        <div class="chat-input-active hidden" id="chatInputActive">
-          <div class="chat-messages" id="chatMessages">
-            <!-- Chat messages will appear here -->
-          </div>
-          <div class="chat-input-wrapper">
-            <textarea 
-              id="chatInput" 
-              class="chat-input" 
-              placeholder="Ask questions about this page content..."
-              rows="1"
-            ></textarea>
-            <button id="chatSendBtn" class="chat-send-btn" disabled>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
+        <button class="chat-expand-btn" id="chatExpandBtn" title="Expand chat to full height">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="chat-input-container">
+        <div class="chat-messages" id="chatMessages">
+          <!-- Chat messages will appear here -->
+        </div>
+        <div class="chat-input-wrapper">
+          <textarea 
+            id="chatInput" 
+            class="chat-input" 
+            placeholder="Ask questions about this page content..."
+            rows="1"
+          ></textarea>
+          <button id="chatSendBtn" class="chat-send-btn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -362,6 +355,7 @@
       </div>
     </div>
     
+  </div>
   </div>
 
   <!-- Import security libraries -->
