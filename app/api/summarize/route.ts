@@ -24,7 +24,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
+    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
   })
 }
 
@@ -46,13 +46,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided for summarization" }, { status: 400 })
     }
 
-    // Model is always provided by the extension now (gemini-flash-2.5 is the default)
+    // Model is always provided by the extension now (gemini-flash-lite-2.5 is the default)
     if (!model) {
       return NextResponse.json({ error: "No model specified" }, { status: 400 })
     }
 
     // Model configuration mapping
     const modelMapping = {
+      "gemini-flash-lite-2.5": { providerName: "google", model: "gemini-2.5-flash-lite-preview-06-17", requiresApiKey: false, useSystemKey: true },
       "gemini-flash-2.5": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: false, useSystemKey: true },
       "gemini-flash-2.5-user": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
       "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },

@@ -323,10 +323,11 @@ function initializeExtension() {
     xai: "https://console.x.ai/"
   }
 
-  // Models data (Gemini Flash as default, separate from user API keys)
+  // Models data (Gemini Flash Lite as default, separate from user API keys)
   // Model IDs match the API expected format
   const models = [
-    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
+    { id: "gemini-flash-lite-2.5", name: "Gemini Flash Lite 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash-lite" },
+    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
     { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity", apiId: "perplexity-sonar" },
     { id: "gemini-flash-2.5-user", name: "Gemini Flash 2.5", provider: "google", apiId: "google-gemini-2.5-flash" },
     { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google", apiId: "google-gemini-2.5-pro" },
