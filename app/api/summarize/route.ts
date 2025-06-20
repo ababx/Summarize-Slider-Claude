@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     const modelMapping = {
       "gemini-flash-lite-2.5": { providerName: "google", model: "gemini-2.5-flash-lite-preview-06-17", requiresApiKey: false, useSystemKey: true },
       "gemini-flash-2.5": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: false, useSystemKey: true },
+      "gemini-flash-lite-2.5-user": { providerName: "google", model: "gemini-2.5-flash-lite-preview-06-17", requiresApiKey: true, useSystemKey: false },
       "gemini-flash-2.5-user": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
       "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
