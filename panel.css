@@ -12,51 +12,23 @@
 body .panel-overlay,
 html body .panel-overlay,
 .panel-overlay.panel-overlay {
-  background: transparent !important;
+
 }
 
 body .summarizer-panel,
 html body .summarizer-panel,
 .summarizer-panel.summarizer-panel {
-  background-color: #faf9f5 !important;
 }
 
 html, body {
   margin: 0 !important;
   padding: 0 !important;
   overflow-x: hidden !important;
-  background: transparent !important;
   min-height: 100vh !important;
   width: 100% !important;
 }
 
-/* Iframe-specific overrides for sites like Google that inject CSS into iframes */
-html[style*="background"],
-body[style*="background"] {
-  background: transparent !important;
-}
 
-/* Force transparency on the HTML and body elements */
-html {
-  background-image: none !important;
-  background: transparent !important;
-}
-
-body {
-  background-image: none !important;
-  background: transparent !important;
-}
-
-/* Force iframe transparency on problematic sites */
-html:root {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-*:root {
-  background: transparent !important;
-  background-color: transparent !important;
-}
 
 /* Ensure all interactive elements maintain proper pointer events and z-index */
 button,
@@ -92,7 +64,6 @@ select,
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  background: transparent !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
   display: flex !important;
@@ -113,10 +84,12 @@ select,
   visibility: visible !important;
 }
 
-
+/* Debug: Uncomment this to see the transparent area with a tinted background */
+/*
 .panel-overlay {
   background: rgba(255, 0, 0, 0.1) !important;
 }
+*/
 
 
 .summarizer-panel {
@@ -125,10 +98,9 @@ select,
   max-width: 560px;
   min-width: 320px;
   height: 100%;
-  background-color: #faf9f5 !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  background-color: rgb(250, 249, 245) !important;
+  box-shadow: rgba(17, 12, 46, 0.2) 0px 0 10px 0px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
@@ -818,6 +790,7 @@ select,
   width: 100%;
   background-color: #ffffff;
   border-radius: 24px;
+  border: 1px solid rgba(31, 30, 29, 0.08);
   top: 0;
   left: 0;
 }
