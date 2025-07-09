@@ -74,6 +74,7 @@ function initializeExtension() {
   const resizeHandle = document.getElementById("resizeHandle")
   const chatExpandBtn = document.getElementById("chatExpandBtn")
   const threePerspectivesBtn = document.getElementById("threePerspectivesBtn")
+  console.log('Three perspectives button found:', !!threePerspectivesBtn)
   
   // Chat sizing configuration
   const CHAT_SIZES = {
@@ -2190,7 +2191,9 @@ function initializeExtension() {
     updateChatState()
     
     // Initialize three perspectives button state
-    threePerspectivesBtn.disabled = true // Start disabled until content is available
+    if (threePerspectivesBtn) {
+      threePerspectivesBtn.disabled = true // Start disabled until content is available
+    }
     
     // Initialize chat area with proper sizing
     initializeChatSize()
@@ -2234,11 +2237,20 @@ function initializeExtension() {
     })
     
     // 3 Perspectives button click
-    threePerspectivesBtn.addEventListener('click', () => {
-      if (!threePerspectivesBtn.disabled) {
-        generatePerspectives()
-      }
-    })
+    if (threePerspectivesBtn) {
+      threePerspectivesBtn.addEventListener('click', () => {
+        console.log('3 Perspectives button clicked!')
+        console.log('Button disabled:', threePerspectivesBtn.disabled)
+        console.log('Page content:', pageContent?.length || 0)
+        if (!threePerspectivesBtn.disabled) {
+          generatePerspectives()
+        } else {
+          console.log('Button is disabled, not generating perspectives')
+        }
+      })
+    } else {
+      console.error('Three perspectives button not found!')
+    }
     
     // Note: No unlock button needed - banner is purely informational
     
@@ -2431,7 +2443,11 @@ function initializeExtension() {
     console.log('Chat state updated. Page content length:', pageContent?.length || 0)
     
     // Enable/disable three perspectives button based on content availability
-    threePerspectivesBtn.disabled = !pageContent || pageContent.length === 0
+    const shouldDisable = !pageContent || pageContent.length === 0
+    console.log('Three perspectives button disabled:', shouldDisable)
+    if (threePerspectivesBtn) {
+      threePerspectivesBtn.disabled = shouldDisable
+    }
   }
   
   async function sendChatMessage() {
@@ -2468,6 +2484,8 @@ function initializeExtension() {
   }
   
   async function generatePerspectives() {
+    console.log('generatePerspectives called!')
+    
     // Show typing indicator in chat
     const typingId = addChatMessage('assistant', '...', true)
     
