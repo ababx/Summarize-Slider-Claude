@@ -74,6 +74,133 @@ function initializeExtension() {
   const resizeHandle = document.getElementById("resizeHandle")
   const chatExpandBtn = document.getElementById("chatExpandBtn")
   
+  // Chat sizing configuration
+  const CHAT_SIZES = {
+    MINIMUM: 100,
+    get MINIMUM_WITH_CONTENT() { return Math.max(100, window.innerHeight * 0.1) },
+    get HALF() { return window.innerHeight * 0.5 },
+    get MAXIMUM() { return window.innerHeight * 0.8 }
+  }
+  
+  // Content detection function
+  function chatHasContent() {
+    // Check for text in chat input
+    const hasInputText = chatInput && chatInput.value.trim().length > 0
+    
+    // Check for existing chat messages
+    const hasMessages = chatMessages && chatMessages.children.length > 0
+    
+    return hasInputText || hasMessages
+  }
+  
+  // Get appropriate minimum size based on content
+  function getMinimumChatSize() {
+    return chatHasContent() ? CHAT_SIZES.MINIMUM_WITH_CONTENT : CHAT_SIZES.MINIMUM
+  }
+  
+  // Get current chat height
+  function getCurrentChatHeight() {
+    return chatSection ? parseInt(window.getComputedStyle(chatSection).height, 10) : 0
+  }
+  
+  // Set chat height with appropriate classes
+  function setChatHeight(height) {
+    if (!chatSection) return
+    
+    chatSection.style.height = height + 'px'
+    
+    // Update CSS classes based on height
+    const minimumSize = getMinimumChatSize()
+    if (height <= minimumSize) {
+      chatSection.classList.add('collapsed')
+      chatSection.classList.remove('expanded')
+    } else if (height >= CHAT_SIZES.MAXIMUM * 0.9) {
+      chatSection.classList.add('expanded')
+      chatSection.classList.remove('collapsed')
+    } else {
+      chatSection.classList.remove('collapsed')
+      chatSection.classList.remove('expanded')
+    }
+    
+    // Save to storage
+    chrome.storage.local.set({ 
+      chatSectionHeight: height,
+      chatExpanded: height >= CHAT_SIZES.MAXIMUM * 0.9
+    })
+  }
+  
+  // Auto-resize chat to fit content
+  function autoResizeChatToContent() {
+    const currentHeight = getCurrentChatHeight()
+    const minimumSize = getMinimumChatSize()
+    
+    // If chat is smaller than minimum, expand to accommodate content
+    if (currentHeight < minimumSize) {
+      setChatHeight(minimumSize)
+    }
+  }
+  
+  // Cycling button state management
+  let expandButtonState = 'collapsed' // collapsed, half, expanded
+  
+  // Get next size in cycle based on current state and content
+  function getNextChatSize() {
+    const currentHeight = getCurrentChatHeight()
+    const minimumSize = getMinimumChatSize()
+    
+    // Determine current state based on height
+    if (currentHeight <= minimumSize + 10) { // +10 for tolerance
+      expandButtonState = 'collapsed'
+    } else if (currentHeight >= CHAT_SIZES.MAXIMUM * 0.9) {
+      expandButtonState = 'expanded'
+    } else {
+      expandButtonState = 'half'
+    }
+    
+    // Return next size in cycle
+    switch (expandButtonState) {
+      case 'collapsed':
+        return CHAT_SIZES.HALF
+      case 'half':
+        return CHAT_SIZES.MAXIMUM
+      case 'expanded':
+        return minimumSize
+      default:
+        return CHAT_SIZES.HALF
+    }
+  }
+  
+  // Update expand button arrow direction
+  function updateExpandButtonArrows() {
+    if (!chatExpandBtn) return
+    
+    const currentHeight = getCurrentChatHeight()
+    const nextSize = getNextChatSize()
+    
+    // Update arrow direction based on next action
+    const svg = chatExpandBtn.querySelector('svg')
+    if (svg) {
+      if (nextSize > currentHeight) {
+        // Will expand - show up arrows (normal orientation)
+        svg.innerHTML = `
+          <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        `
+        svg.style.transform = 'rotate(0deg)'
+        chatExpandBtn.title = 'Expand chat'
+      } else {
+        // Will collapse - show up arrows rotated 180 degrees
+        svg.innerHTML = `
+          <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        `
+        svg.style.transform = 'rotate(180deg)'
+        svg.style.transition = 'transform 0.2s ease'
+        chatExpandBtn.title = 'Collapse chat'
+      }
+    }
+  }
+  
   // New shadcn-style elements
   const promptsBtn = document.getElementById("promptsBtn")
   const modelSelectorBtn = document.getElementById("modelSelectorBtn")
@@ -1917,6 +2044,7 @@ function initializeExtension() {
   // Fallback for older browsers
   window.addEventListener("resize", () => {
     updateSliderThumbPosition(complexitySlider.value)
+    updateExpandButtonArrows()
   })
   
   // Also watch for content changes that might affect layout
@@ -1944,6 +2072,9 @@ function initializeExtension() {
     // Initialize chat state
     updateChatState()
     
+    // Initialize chat area with proper sizing
+    initializeChatSize()
+    
     // Auto-resize chat input and expand section when user starts typing
     chatInput.addEventListener('input', () => {
       chatInput.style.height = 'auto'
@@ -1952,13 +2083,17 @@ function initializeExtension() {
       // Enable/disable send button
       chatSendBtn.disabled = !chatInput.value.trim()
       
-      // Expand chat section when user starts typing
-      expandChatSection()
+      // Auto-resize chat to accommodate content
+      autoResizeChatToContent()
+      
+      // Update expand button arrows based on new content state
+      updateExpandButtonArrows()
     })
     
     // Also expand on focus to show the user can type
     chatInput.addEventListener('focus', () => {
-      expandChatSection()
+      autoResizeChatToContent()
+      updateExpandButtonArrows()
     })
     
     // Send message on Enter (Shift+Enter for new line)
@@ -2023,56 +2158,71 @@ function initializeExtension() {
   
   // Initialize smart resize click handlers
   function initializeSmartResize() {
-    // Click on summary area to collapse chat
+    // Click on summary area to minimize chat
     const summaryContainer = document.getElementById('summaryContainer')
     if (summaryContainer) {
       summaryContainer.addEventListener('click', () => {
-        collapseChat()
+        minimizeChatToSmall()
       })
     }
     
-    // Click on entire panel content area to collapse chat
+    // Click on entire panel content area to minimize chat
     const panelContent = document.querySelector('.panel-content')
     if (panelContent) {
       panelContent.addEventListener('click', (e) => {
         // Only trigger if clicked directly on panel content, not on child elements
         if (e.target === panelContent) {
-          collapseChat()
+          minimizeChatToSmall()
         }
       })
     }
     
-    // Click on complexity section to collapse chat
+    // Click on complexity section to minimize chat
     const complexitySection = document.querySelector('.complexity-section')
     if (complexitySection) {
       complexitySection.addEventListener('click', () => {
-        collapseChat()
+        minimizeChatToSmall()
       })
     }
     
-    // Click on chat section to expand to 50%
+    // Click on chat section to expand based on current size
     if (chatSection) {
-      chatSection.addEventListener('click', () => {
-        resizeChatToPercentage(50)
+      chatSection.addEventListener('click', (e) => {
+        // Don't trigger if clicking on resize handle or expand button
+        if (e.target.closest('.resize-handle') || e.target.closest('.chat-expand-btn')) {
+          return
+        }
+        
+        expandChatOnClick()
       })
     }
     
-    // Helper function to collapse chat to small size
-    function collapseChat() {
-      chatSection.style.height = '100px'
-      chatSection.classList.add('collapsed')
-      chatSection.classList.remove('expanded')
+    // Helper function to minimize chat to appropriate small size
+    function minimizeChatToSmall() {
+      const minimumSize = getMinimumChatSize()
+      setChatHeight(minimumSize)
+      updateExpandButtonArrows()
+    }
+    
+    // Helper function to expand chat on click
+    function expandChatOnClick() {
+      const currentHeight = getCurrentChatHeight()
+      const minimumSize = getMinimumChatSize()
       
-      // Update expand button state if it exists
-      if (chatExpandBtn) {
-        chatExpandBtn.classList.remove('expanded')
-        chatExpandBtn.title = 'Expand chat to full height'
+      // If currently at minimum size, expand to accommodate content
+      if (currentHeight <= minimumSize + 10) {
+        // If no content, expand to half size
+        // If has content, expand to size that accommodates content
+        const targetHeight = chatHasContent() ? 
+          Math.max(CHAT_SIZES.HALF, minimumSize) : 
+          CHAT_SIZES.HALF
+        setChatHeight(targetHeight)
+      } else {
+        // If already expanded, maximize to full height
+        setChatHeight(CHAT_SIZES.MAXIMUM)
       }
       
-      chrome.storage.local.set({ 
-        chatSectionHeight: 100,
-        chatExpanded: false 
-      })
+      updateExpandButtonArrows()
     }
   }
   
@@ -2113,93 +2263,28 @@ function initializeExtension() {
   function initializeChatExpandButton() {
     if (!chatExpandBtn || !chatSection) return
     
-    let isExpanded = false
-    let previousHeight = 100 // Store the previous height for restoration
-    
-    // Click handler for expand/collapse button
+    // Click handler for cycling through size states
     chatExpandBtn.addEventListener('click', (e) => {
       e.stopPropagation() // Prevent triggering resize handle drag
       e.preventDefault() // Prevent any default behavior
       
-      if (isExpanded) {
-        // Collapse to previous height
-        collapseChat()
-      } else {
-        // Expand to full panel height
-        expandChatToFull()
-      }
+      const nextSize = getNextChatSize()
+      setChatHeight(nextSize)
+      updateExpandButtonArrows()
     })
     
-    function expandChatToFull() {
-      // Store current height before expanding
-      const currentHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
-      if (currentHeight > 100) {
-        previousHeight = currentHeight
-      }
-      
-      // Get the summarizer panel total height
-      const summarizerPanel = document.querySelector('.summarizer-panel')
-      if (!summarizerPanel) return
-      
-      // Get the panel header height to subtract from total
-      const panelHeader = document.querySelector('.panel-header')
-      const headerHeight = panelHeader ? panelHeader.offsetHeight : 0
-      
-      // Calculate available height: total panel minus header minus padding for input and resize handle
-      const totalPanelHeight = summarizerPanel.offsetHeight
-      const availableHeight = totalPanelHeight - headerHeight - 120 // Reserve 120px for chat input area and safe margin
-      
-      // Set to calculated height
-      chatSection.style.height = availableHeight + 'px'
-      chatSection.classList.add('expanded')
-      chatSection.classList.remove('collapsed')
-      
-      // Update button state
-      chatExpandBtn.classList.add('expanded')
-      chatExpandBtn.title = 'Collapse chat'
-      isExpanded = true
-      
-      // Save the state
-      chrome.storage.local.set({ 
-        chatSectionHeight: availableHeight,
-        chatExpanded: true 
-      })
-      
-      console.log('Chat expanded to full height:', availableHeight + 'px')
-    }
+    // Initialize expand button arrows
+    updateExpandButtonArrows()
+  }
+
+  // Initialize chat area with proper minimum size
+  function initializeChatSize() {
+    if (!chatSection) return
     
-    function collapseChat() {
-      // Restore to previous height
-      const targetHeight = Math.max(100, previousHeight)
-      
-      chatSection.style.height = targetHeight + 'px'
-      chatSection.classList.remove('expanded')
-      
-      // Manage collapsed class
-      if (targetHeight <= 100) {
-        chatSection.classList.add('collapsed')
-      }
-      
-      // Update button state
-      chatExpandBtn.classList.remove('expanded')
-      chatExpandBtn.title = 'Expand chat to full height'
-      isExpanded = false
-      
-      // Save the state
-      chrome.storage.local.set({ 
-        chatSectionHeight: targetHeight,
-        chatExpanded: false 
-      })
-      
-      console.log('Chat collapsed to previous height:', targetHeight + 'px')
-    }
-    
-    // Check if chat was previously expanded
-    chrome.storage.local.get(['chatExpanded'], (result) => {
-      if (result.chatExpanded) {
-        expandChatToFull()
-      }
-    })
+    // Set initial size to minimum
+    const minimumSize = getMinimumChatSize()
+    setChatHeight(minimumSize)
+    updateExpandButtonArrows()
   }
   
   function updateChatState() {
@@ -2393,6 +2478,12 @@ Please respond naturally as a helpful assistant.`
     chatMessages.appendChild(messageDiv)
     chatMessages.scrollTop = chatMessages.scrollHeight
     
+    // Auto-resize chat to accommodate new content
+    autoResizeChatToContent()
+    
+    // Update expand button arrows based on new content state
+    updateExpandButtonArrows()
+    
     return messageId
   }
   
@@ -2460,8 +2551,8 @@ Please respond naturally as a helpful assistant.`
     let startHeight = 0
     
     // Always start with small size (ignore any saved large sizes)
-    chatSection.style.height = '100px'
-    chatSection.classList.add('collapsed')
+    const minimumSize = getMinimumChatSize()
+    setChatHeight(minimumSize)
     
     // Force a reflow to ensure styles are applied
     chatSection.offsetHeight
@@ -2471,10 +2562,9 @@ Please respond naturally as a helpful assistant.`
     
     // Double-check height after a brief delay
     setTimeout(() => {
-      if (chatSection.style.height !== '100px') {
+      if (getCurrentChatHeight() !== minimumSize) {
         console.log('Correcting chat section height after initialization')
-        chatSection.style.height = '100px'
-        chatSection.classList.add('collapsed')
+        setChatHeight(minimumSize)
       }
     }, 200)
     
@@ -2487,7 +2577,7 @@ Please respond naturally as a helpful assistant.`
       
       isResizing = true
       startY = e.clientY
-      startHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+      startHeight = getCurrentChatHeight()
       
       resizeHandle.classList.add('dragging')
       document.body.style.cursor = 'ns-resize'
@@ -2502,28 +2592,18 @@ Please respond naturally as a helpful assistant.`
       
       const deltaY = startY - e.clientY // Inverted because we want up = bigger
       
-      // Get the summarizer panel total height for dynamic calculation
-      const summarizerPanel = document.querySelector('.summarizer-panel')
-      const panelHeader = document.querySelector('.panel-header')
+      // Use our defined min/max values for full flexibility
+      const minHeight = getMinimumChatSize()
+      const maxHeight = CHAT_SIZES.MAXIMUM
       
-      if (summarizerPanel && panelHeader) {
-        const totalPanelHeight = summarizerPanel.offsetHeight
-        const headerHeight = panelHeader.offsetHeight
-        // Use same maximum as expand button - reserve 120px for input area
-        const maxPossibleHeight = totalPanelHeight - headerHeight - 120
-        
-        // Allow smooth resizing with generous bounds
-        const newHeight = Math.max(80, Math.min(maxPossibleHeight, startHeight + deltaY))
-        
-        chatSection.style.height = newHeight + 'px'
-        
-        // Update collapsed class based on size
-        if (newHeight <= 100) {
-          chatSection.classList.add('collapsed')
-        } else {
-          chatSection.classList.remove('collapsed')
-        }
-      }
+      // Allow smooth resizing with full range from min to max
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
+      
+      // Use setChatHeight to handle height, CSS classes, and storage
+      setChatHeight(newHeight)
+      
+      // Update expand button arrows to reflect new state
+      updateExpandButtonArrows()
       
       e.preventDefault()
     })
@@ -2536,9 +2616,8 @@ Please respond naturally as a helpful assistant.`
         document.body.style.cursor = ''
         document.body.style.userSelect = ''
         
-        // Save the new height
-        const currentHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
-        chrome.storage.local.set({ chatSectionHeight: currentHeight })
+        // Final arrow update after resize is complete
+        updateExpandButtonArrows()
       }
     })
     
@@ -2551,7 +2630,7 @@ Please respond naturally as a helpful assistant.`
       
       isResizing = true
       startY = e.touches[0].clientY
-      startHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
+      startHeight = getCurrentChatHeight()
       
       resizeHandle.classList.add('dragging')
       e.preventDefault()
@@ -2562,28 +2641,18 @@ Please respond naturally as a helpful assistant.`
       
       const deltaY = startY - e.touches[0].clientY
       
-      // Get the summarizer panel total height for dynamic calculation
-      const summarizerPanel = document.querySelector('.summarizer-panel')
-      const panelHeader = document.querySelector('.panel-header')
+      // Use our defined min/max values for full flexibility
+      const minHeight = getMinimumChatSize()
+      const maxHeight = CHAT_SIZES.MAXIMUM
       
-      if (summarizerPanel && panelHeader) {
-        const totalPanelHeight = summarizerPanel.offsetHeight
-        const headerHeight = panelHeader.offsetHeight
-        // Use same maximum as expand button - reserve 120px for input area
-        const maxPossibleHeight = totalPanelHeight - headerHeight - 120
-        
-        // Allow smooth resizing with generous bounds
-        const newHeight = Math.max(80, Math.min(maxPossibleHeight, startHeight + deltaY))
-        
-        chatSection.style.height = newHeight + 'px'
-        
-        // Update collapsed class based on size
-        if (newHeight <= 100) {
-          chatSection.classList.add('collapsed')
-        } else {
-          chatSection.classList.remove('collapsed')
-        }
-      }
+      // Allow smooth resizing with full range from min to max
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
+      
+      // Use setChatHeight to handle height, CSS classes, and storage
+      setChatHeight(newHeight)
+      
+      // Update expand button arrows to reflect new state
+      updateExpandButtonArrows()
       
       e.preventDefault()
     })
@@ -2593,9 +2662,8 @@ Please respond naturally as a helpful assistant.`
         isResizing = false
         resizeHandle.classList.remove('dragging')
         
-        // Save the new height
-        const currentHeight = parseInt(window.getComputedStyle(chatSection).height, 10)
-        chrome.storage.local.set({ chatSectionHeight: currentHeight })
+        // Final arrow update after resize is complete
+        updateExpandButtonArrows()
       }
     })
   }
