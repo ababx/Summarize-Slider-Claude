@@ -107,7 +107,9 @@ function initializeExtension() {
   function setChatHeight(height) {
     if (!chatSection) return
     
+    console.log('🎯 setChatHeight called with:', height)
     chatSection.style.height = height + 'px'
+    console.log('🎯 Applied height, actual height now:', getCurrentChatHeight())
     
     // Update CSS classes based on height
     const minimumSize = getMinimumChatSize()
@@ -189,14 +191,16 @@ function initializeExtension() {
     if (!chatExpandBtn) return
     
     const currentHeight = getCurrentChatHeight()
-    const nextSize = getNextChatSize()
+    const maxSize = CHAT_SIZES.MAXIMUM
+    const maxThreshold = maxSize - 50
     
     // Debug logging
     console.log('=== ARROW UPDATE ===')
-    console.log('Current height:', currentHeight, 'Next size:', nextSize, 'Max:', CHAT_SIZES.MAXIMUM)
+    console.log('Current height:', currentHeight, 'Max threshold:', maxThreshold, 'Max:', maxSize)
+    console.log('Is at max?', currentHeight >= maxThreshold)
     console.log('Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
     
-    // Update arrow direction based on next action
+    // Update arrow direction based on current height, not next size
     const svg = chatExpandBtn.querySelector('svg')
     if (svg) {
       // Always use the same up arrow SVG content
@@ -205,16 +209,17 @@ function initializeExtension() {
         <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       `
       
-      if (nextSize > currentHeight) {
-        // Will expand - show up arrows (normal orientation)
-        chatExpandBtn.classList.remove('expanded')
-        chatExpandBtn.title = 'Expand chat'
-        console.log('🔼 ARROWS: UP (expand) - removed expanded class')
-      } else {
-        // Will collapse - rotate button 180 degrees using CSS class
+      // Simple check: if we're at or near maximum height, show down arrows
+      if (currentHeight >= maxThreshold) {
+        // At max height - next action will be collapse
         chatExpandBtn.classList.add('expanded')
         chatExpandBtn.title = 'Collapse chat'
         console.log('🔽 ARROWS: DOWN (collapse) - added expanded class for 180deg rotation')
+      } else {
+        // Not at max height - next action will be expand
+        chatExpandBtn.classList.remove('expanded')
+        chatExpandBtn.title = 'Expand chat'
+        console.log('🔼 ARROWS: UP (expand) - removed expanded class')
       }
       console.log('After update - Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
       console.log('===================')
@@ -2288,14 +2293,19 @@ function initializeExtension() {
       e.stopPropagation() // Prevent triggering resize handle drag
       e.preventDefault() // Prevent any default behavior
       
+      console.log('🔘 BUTTON CLICKED')
       const nextSize = getNextChatSize()
+      console.log('Button click - will set height to:', nextSize)
+      
       setChatHeight(nextSize)
       
-      // Force arrow update after a brief delay to ensure height change is processed
+      // Wait longer and check if height actually changed
       setTimeout(() => {
+        const actualHeight = getCurrentChatHeight()
+        console.log('After setChatHeight - Actual height is now:', actualHeight, 'Expected:', nextSize)
         updateExpandButtonArrows()
         console.log('Forced arrow update after button click')
-      }, 10)
+      }, 50) // Increased delay
     })
     
     // Initialize expand button arrows
