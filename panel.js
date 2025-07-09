@@ -82,6 +82,17 @@ function initializeExtension() {
     get MAXIMUM() { return window.innerHeight * 0.8 }
   }
   
+  // Debug function to log all size values
+  function logChatSizes() {
+    console.log('📏 CHAT SIZES DEBUG:')
+    console.log('- MINIMUM:', CHAT_SIZES.MINIMUM)
+    console.log('- MINIMUM_WITH_CONTENT:', CHAT_SIZES.MINIMUM_WITH_CONTENT)
+    console.log('- HALF:', CHAT_SIZES.HALF)
+    console.log('- MAXIMUM:', CHAT_SIZES.MAXIMUM)
+    console.log('- Window height:', window.innerHeight)
+    console.log('- Max threshold (max-10):', CHAT_SIZES.MAXIMUM - 10)
+  }
+  
   // Content detection function
   function chatHasContent() {
     // Check for text in chat input
@@ -114,7 +125,7 @@ function initializeExtension() {
     // Update CSS classes based on height
     const minimumSize = getMinimumChatSize()
     const maxSize = CHAT_SIZES.MAXIMUM
-    const maxThreshold = maxSize - 50 // Same threshold as getNextChatSize
+    const maxThreshold = maxSize - 10 // Same threshold as getNextChatSize
     const minThreshold = minimumSize + 20 // Same threshold as getNextChatSize
     
     if (height <= minThreshold) {
@@ -160,7 +171,7 @@ function initializeExtension() {
     
     // More robust state detection - check if we're very close to max
     // Account for both manual drag and button click reaching max differently
-    const maxThreshold = maxSize - 50 // Larger tolerance for max detection
+    const maxThreshold = maxSize - 10 // Smaller tolerance for max detection
     const minThreshold = minimumSize + 20 // Tolerance for min detection
     
     if (currentHeight <= minThreshold) {
@@ -192,11 +203,15 @@ function initializeExtension() {
     
     const currentHeight = getCurrentChatHeight()
     const maxSize = CHAT_SIZES.MAXIMUM
-    const maxThreshold = maxSize - 50
+    const maxThreshold = maxSize - 10
     
-    // Debug logging
+    // Debug logging with more detail
     console.log('=== ARROW UPDATE ===')
-    console.log('Current height:', currentHeight, 'Max threshold:', maxThreshold, 'Max:', maxSize)
+    logChatSizes()
+    console.log('Current height:', currentHeight)
+    console.log('Max size (80% viewport):', maxSize)
+    console.log('Max threshold (max-10):', maxThreshold)
+    console.log('Difference from max:', maxSize - currentHeight, 'pixels')
     console.log('Is at max?', currentHeight >= maxThreshold)
     console.log('Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
     
@@ -2294,8 +2309,10 @@ function initializeExtension() {
       e.preventDefault() // Prevent any default behavior
       
       console.log('🔘 BUTTON CLICKED')
+      const beforeHeight = getCurrentChatHeight()
       const nextSize = getNextChatSize()
-      console.log('Button click - will set height to:', nextSize)
+      console.log('Button click - Before height:', beforeHeight, 'Will set to:', nextSize)
+      console.log('Requested change:', nextSize - beforeHeight, 'pixels')
       
       setChatHeight(nextSize)
       
