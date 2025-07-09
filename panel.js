@@ -112,10 +112,13 @@ function initializeExtension() {
     // Update CSS classes based on height
     const minimumSize = getMinimumChatSize()
     const maxSize = CHAT_SIZES.MAXIMUM
-    if (height <= minimumSize + 10) {
+    const maxThreshold = maxSize - 50 // Same threshold as getNextChatSize
+    const minThreshold = minimumSize + 20 // Same threshold as getNextChatSize
+    
+    if (height <= minThreshold) {
       chatSection.classList.add('collapsed')
       chatSection.classList.remove('expanded')
-    } else if (height >= maxSize - 20) {
+    } else if (height >= maxThreshold) {
       chatSection.classList.add('expanded')
       chatSection.classList.remove('collapsed')
     } else {
@@ -126,7 +129,7 @@ function initializeExtension() {
     // Save to storage
     chrome.storage.local.set({ 
       chatSectionHeight: height,
-      chatExpanded: height >= maxSize - 20
+      chatExpanded: height >= maxThreshold
     })
   }
   
@@ -153,16 +156,20 @@ function initializeExtension() {
     // Debug logging
     console.log('getNextChatSize - Current:', currentHeight, 'Min:', minimumSize, 'Max:', maxSize)
     
-    // Determine current state based on height with better tolerance
-    if (currentHeight <= minimumSize + 10) { // +10 for tolerance
+    // More robust state detection - check if we're very close to max
+    // Account for both manual drag and button click reaching max differently
+    const maxThreshold = maxSize - 50 // Larger tolerance for max detection
+    const minThreshold = minimumSize + 20 // Tolerance for min detection
+    
+    if (currentHeight <= minThreshold) {
       expandButtonState = 'collapsed'
-    } else if (currentHeight >= maxSize - 20) { // -20 for tolerance from max
+    } else if (currentHeight >= maxThreshold) {
       expandButtonState = 'expanded'
     } else {
       expandButtonState = 'half'
     }
     
-    console.log('Determined state:', expandButtonState)
+    console.log('Determined state:', expandButtonState, 'Thresholds - Min:', minThreshold, 'Max:', maxThreshold)
     
     // Return next size in cycle
     switch (expandButtonState) {
@@ -185,7 +192,9 @@ function initializeExtension() {
     const nextSize = getNextChatSize()
     
     // Debug logging
-    console.log('Arrow update - Current height:', currentHeight, 'Next size:', nextSize, 'Max:', CHAT_SIZES.MAXIMUM)
+    console.log('=== ARROW UPDATE ===')
+    console.log('Current height:', currentHeight, 'Next size:', nextSize, 'Max:', CHAT_SIZES.MAXIMUM)
+    console.log('Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
     
     // Update arrow direction based on next action
     const svg = chatExpandBtn.querySelector('svg')
@@ -200,13 +209,15 @@ function initializeExtension() {
         // Will expand - show up arrows (normal orientation)
         chatExpandBtn.classList.remove('expanded')
         chatExpandBtn.title = 'Expand chat'
-        console.log('Arrows set to UP (expand) - removed expanded class')
+        console.log('🔼 ARROWS: UP (expand) - removed expanded class')
       } else {
         // Will collapse - rotate button 180 degrees using CSS class
         chatExpandBtn.classList.add('expanded')
         chatExpandBtn.title = 'Collapse chat'
-        console.log('Arrows set to DOWN (collapse) - added expanded class for 180deg rotation')
+        console.log('🔽 ARROWS: DOWN (collapse) - added expanded class for 180deg rotation')
       }
+      console.log('After update - Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
+      console.log('===================')
     }
   }
   
@@ -2279,7 +2290,12 @@ function initializeExtension() {
       
       const nextSize = getNextChatSize()
       setChatHeight(nextSize)
-      updateExpandButtonArrows()
+      
+      // Force arrow update after a brief delay to ensure height change is processed
+      setTimeout(() => {
+        updateExpandButtonArrows()
+        console.log('Forced arrow update after button click')
+      }, 10)
     })
     
     // Initialize expand button arrows
