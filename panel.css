@@ -1756,7 +1756,7 @@ select,
 
 .chat-message-user {
   justify-content: flex-end;
-  margin-right: 12px 16px;
+  margin-right: 16px;
 }
 
 .chat-message-assistant {
