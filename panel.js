@@ -111,10 +111,11 @@ function initializeExtension() {
     
     // Update CSS classes based on height
     const minimumSize = getMinimumChatSize()
-    if (height <= minimumSize) {
+    const maxSize = CHAT_SIZES.MAXIMUM
+    if (height <= minimumSize + 10) {
       chatSection.classList.add('collapsed')
       chatSection.classList.remove('expanded')
-    } else if (height >= CHAT_SIZES.MAXIMUM * 0.9) {
+    } else if (height >= maxSize - 20) {
       chatSection.classList.add('expanded')
       chatSection.classList.remove('collapsed')
     } else {
@@ -125,7 +126,7 @@ function initializeExtension() {
     // Save to storage
     chrome.storage.local.set({ 
       chatSectionHeight: height,
-      chatExpanded: height >= CHAT_SIZES.MAXIMUM * 0.9
+      chatExpanded: height >= maxSize - 20
     })
   }
   
@@ -147,15 +148,21 @@ function initializeExtension() {
   function getNextChatSize() {
     const currentHeight = getCurrentChatHeight()
     const minimumSize = getMinimumChatSize()
+    const maxSize = CHAT_SIZES.MAXIMUM
     
-    // Determine current state based on height
+    // Debug logging
+    console.log('getNextChatSize - Current:', currentHeight, 'Min:', minimumSize, 'Max:', maxSize)
+    
+    // Determine current state based on height with better tolerance
     if (currentHeight <= minimumSize + 10) { // +10 for tolerance
       expandButtonState = 'collapsed'
-    } else if (currentHeight >= CHAT_SIZES.MAXIMUM * 0.9) {
+    } else if (currentHeight >= maxSize - 20) { // -20 for tolerance from max
       expandButtonState = 'expanded'
     } else {
       expandButtonState = 'half'
     }
+    
+    console.log('Determined state:', expandButtonState)
     
     // Return next size in cycle
     switch (expandButtonState) {
@@ -177,26 +184,28 @@ function initializeExtension() {
     const currentHeight = getCurrentChatHeight()
     const nextSize = getNextChatSize()
     
+    // Debug logging
+    console.log('Arrow update - Current height:', currentHeight, 'Next size:', nextSize, 'Max:', CHAT_SIZES.MAXIMUM)
+    
     // Update arrow direction based on next action
     const svg = chatExpandBtn.querySelector('svg')
     if (svg) {
+      // Always use the same up arrow SVG content
+      svg.innerHTML = `
+        <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      `
+      
       if (nextSize > currentHeight) {
         // Will expand - show up arrows (normal orientation)
-        svg.innerHTML = `
-          <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        `
-        svg.style.transform = 'rotate(0deg)'
+        chatExpandBtn.classList.remove('expanded')
         chatExpandBtn.title = 'Expand chat'
+        console.log('Arrows set to UP (expand) - removed expanded class')
       } else {
-        // Will collapse - show up arrows rotated 180 degrees
-        svg.innerHTML = `
-          <path d="M8 12L12 8L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8 16L12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        `
-        svg.style.transform = 'rotate(180deg)'
-        svg.style.transition = 'transform 0.2s ease'
+        // Will collapse - rotate button 180 degrees using CSS class
+        chatExpandBtn.classList.add('expanded')
         chatExpandBtn.title = 'Collapse chat'
+        console.log('Arrows set to DOWN (collapse) - added expanded class for 180deg rotation')
       }
     }
   }
