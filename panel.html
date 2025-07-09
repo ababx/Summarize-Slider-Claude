@@ -295,6 +295,14 @@
         <div class="chat-messages" id="chatMessages">
           <!-- Chat messages will appear here -->
         </div>
+        <div class="chat-actions-bar">
+          <button id="threePerspectivesBtn" class="three-perspectives-btn" title="Generate 3 different perspectives on this content">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>3 Perspectives</span>
+          </button>
+        </div>
         <div class="chat-input-wrapper">
           <textarea 
             id="chatInput" 
@@ -346,6 +354,16 @@
               </div>
             </div>
             <textarea id="phdPrompt" class="prompt-textarea" placeholder="Enter Expert Level prompt..."></textarea>
+          </div>
+          
+          <div class="prompt-section">
+            <div class="prompt-label-row">
+              <label class="prompt-label">Perspectives Prompt:</label>
+              <div class="prompt-controls">
+                <button class="btn-reset-individual" data-prompt="perspectives" title="Reset Perspectives to default">Reset Prompt</button>
+              </div>
+            </div>
+            <textarea id="perspectivesPrompt" class="prompt-textarea" placeholder="Enter Perspectives prompt..."></textarea>
           </div>
           <div class="prompt-actions">
             <button id="cancelPromptEdit" class="btn-secondary">Cancel</button>

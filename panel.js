@@ -73,6 +73,7 @@ function initializeExtension() {
   const chatMessages = document.getElementById("chatMessages")
   const resizeHandle = document.getElementById("resizeHandle")
   const chatExpandBtn = document.getElementById("chatExpandBtn")
+  const threePerspectivesBtn = document.getElementById("threePerspectivesBtn")
   
   // Chat sizing configuration
   const CHAT_SIZES = {
@@ -327,6 +328,7 @@ function initializeExtension() {
   const eli5PromptTextarea = document.getElementById("eli5Prompt")
   const standardPromptTextarea = document.getElementById("standardPrompt")
   const phdPromptTextarea = document.getElementById("phdPrompt")
+  const perspectivesPromptTextarea = document.getElementById("perspectivesPrompt")
   const savePromptEdit = document.getElementById("savePromptEdit")
   const cancelPromptEdit = document.getElementById("cancelPromptEdit")
   // Remove resetToDefault element reference since it's no longer in HTML
@@ -1320,6 +1322,9 @@ function initializeExtension() {
     if (phdPromptTextarea) {
       phdPromptTextarea.value = customPrompts.phd || defaultPrompts.phd
     }
+    if (perspectivesPromptTextarea) {
+      perspectivesPromptTextarea.value = customPrompts.perspectives || defaultPrompts.perspectives
+    }
     
     if (promptEditorOverlay) {
       promptEditorOverlay.classList.remove("hidden")
@@ -1341,11 +1346,13 @@ function initializeExtension() {
     customPrompts.eli5 = eli5PromptTextarea.value.trim()
     customPrompts.standard = standardPromptTextarea.value.trim()
     customPrompts.phd = phdPromptTextarea.value.trim()
+    customPrompts.perspectives = perspectivesPromptTextarea.value.trim()
     
     // Fallback to defaults if empty
     if (!customPrompts.eli5) customPrompts.eli5 = defaultPrompts.eli5
     if (!customPrompts.standard) customPrompts.standard = defaultPrompts.standard
     if (!customPrompts.phd) customPrompts.phd = defaultPrompts.phd
+    if (!customPrompts.perspectives) customPrompts.perspectives = defaultPrompts.perspectives
     
     saveCustomPrompts()
     closePromptEditorPopup()
@@ -1387,6 +1394,11 @@ function initializeExtension() {
       case 'phd':
         if (phdPromptTextarea) {
           phdPromptTextarea.value = defaultPrompts.phd
+        }
+        break
+      case 'perspectives':
+        if (perspectivesPromptTextarea) {
+          perspectivesPromptTextarea.value = defaultPrompts.perspectives
         }
         break
     }
@@ -2177,6 +2189,9 @@ function initializeExtension() {
     // Initialize chat state
     updateChatState()
     
+    // Initialize three perspectives button state
+    threePerspectivesBtn.disabled = true // Start disabled until content is available
+    
     // Initialize chat area with proper sizing
     initializeChatSize()
     
@@ -2215,6 +2230,13 @@ function initializeExtension() {
     chatSendBtn.addEventListener('click', () => {
       if (!chatSendBtn.disabled) {
         sendChatMessage()
+      }
+    })
+    
+    // 3 Perspectives button click
+    threePerspectivesBtn.addEventListener('click', () => {
+      if (!threePerspectivesBtn.disabled) {
+        generatePerspectives()
       }
     })
     
@@ -2407,6 +2429,9 @@ function initializeExtension() {
   function updateChatState() {
     // Chat is now always available - no locked state
     console.log('Chat state updated. Page content length:', pageContent?.length || 0)
+    
+    // Enable/disable three perspectives button based on content availability
+    threePerspectivesBtn.disabled = !pageContent || pageContent.length === 0
   }
   
   async function sendChatMessage() {
@@ -2442,6 +2467,74 @@ function initializeExtension() {
     processChatMessage(message)
   }
   
+  async function generatePerspectives() {
+    // Show typing indicator in chat
+    const typingId = addChatMessage('assistant', '...', true)
+    
+    try {
+      // Use same model/API key logic as summarization
+      const defaultModel = getDefaultModel()
+      const provider = providers[defaultModel.provider]
+      let apiKey = null
+      
+      // Only require API key for non-system models (same as summarization)
+      if (provider && provider.keyName && !defaultModel.isSystemDefault) {
+        apiKey = await getApiKey(provider.keyName)
+        if (!apiKey) {
+          throw new Error(`API key required for ${defaultModel.name}`)
+        }
+      }
+      
+      // Check usage limits for system default (same as summarization)
+      const isUsingSystemDefault = defaultModel.isSystemDefault
+      if (isUsingSystemDefault && summarizeUsage >= 25) {
+        throw new Error('Monthly usage limit reached')
+      }
+      
+      // Get custom prompt for perspectives
+      const customPrompt = getCurrentPrompt("perspectives")
+      
+      // Get model to send
+      const modelToSend = defaultModel.id
+      
+      // Send request to background script for perspectives analysis
+      chrome.runtime.sendMessage(
+        {
+          action: "getChatResponse",
+          content: pageContent,
+          url: window.location.href,
+          model: modelToSend,
+          apiKey: apiKey,
+          customPrompt: customPrompt,
+          tabId: currentTabId,
+          analysisType: "perspectives"
+        },
+        (response) => {
+          // Remove typing indicator
+          removeChatMessage(typingId)
+          
+          if (response && response.error) {
+            addChatMessage('assistant', `Error: ${response.error}`)
+          } else if (response && response.summary) {
+            // Add perspectives as a chat message
+            addChatMessage('assistant', response.summary)
+            
+            // Update usage tracking for system default
+            if (isUsingSystemDefault) {
+              summarizeUsage++
+              updateUsageDisplay()
+              chrome.storage.local.set({ summarizeUsage })
+            }
+          }
+        }
+      )
+    } catch (error) {
+      // Remove typing indicator
+      removeChatMessage(typingId)
+      addChatMessage('assistant', `Error: ${error.message}`)
+    }
+  }
+
   async function processChatMessage(message) {
     // Show typing indicator
     const typingId = addChatMessage('assistant', '...', true)

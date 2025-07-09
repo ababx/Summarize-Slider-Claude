@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, url, complexity = "standard", model, apiKey, customPrompt } = await req.json()
+    const { text, url, complexity = "standard", model, apiKey, customPrompt, analysisType = "summary" } = await req.json()
     
     console.log("API Request received:", { 
       hasText: !!text, 
@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       complexity, 
       model, 
       hasApiKey: !!apiKey,
-      hasCustomPrompt: !!customPrompt
+      hasCustomPrompt: !!customPrompt,
+      analysisType
     })
 
     if (!text) {
@@ -81,21 +82,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid model selected" }, { status: 400 })
     }
 
-    // Create a prompt based on the complexity level or use custom prompt
+    // Create a prompt based on the analysis type, complexity level, or use custom prompt
     let prompt = ""
     if (customPrompt) {
       // Use custom prompt and replace {url} placeholder
       prompt = customPrompt.replace('{url}', url) + `\n\n${text}`
     } else {
       // Use centralized prompts
-      const complexityLevel = complexity === "phd" ? "expert" : complexity;
-      let basePrompt = getPrompt(complexityLevel, url);
-      
-      prompt = `${basePrompt}\n\n${text}`
+      if (analysisType === "perspectives") {
+        // Use perspectives prompt
+        let basePrompt = getPrompt("perspectives", url);
+        prompt = `${basePrompt}\n\n${text}`
+      } else {
+        // Use complexity-based prompts for regular summaries
+        const complexityLevel = complexity === "phd" ? "expert" : complexity;
+        let basePrompt = getPrompt(complexityLevel, url);
+        prompt = `${basePrompt}\n\n${text}`
+      }
     }
 
-    // Set generous max tokens based on complexity to prevent cutoffs
-    const getMaxTokens = (complexity: string) => {
+    // Set generous max tokens based on analysis type and complexity to prevent cutoffs
+    const getMaxTokens = (analysisType: string, complexity: string) => {
+      if (analysisType === "perspectives") {
+        return 3000   // Generous tokens for 3 perspectives
+      }
+      
       switch (complexity) {
         case "eli5":
           return 1200   // Short but complete summaries
@@ -108,8 +119,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const maxTokens = getMaxTokens(complexity)
-    console.log("Max tokens for", complexity, "complexity:", maxTokens)
+    const maxTokens = getMaxTokens(analysisType, complexity)
+    console.log("Max tokens for", analysisType === "perspectives" ? "perspectives" : `${complexity} complexity`, ":", maxTokens)
 
     // Use direct API calls for all providers to avoid SDK issues
     try {
