@@ -79,7 +79,32 @@ function initializeExtension() {
     MINIMUM: 100,
     get MINIMUM_WITH_CONTENT() { return Math.max(100, window.innerHeight * 0.1) },
     get HALF() { return window.innerHeight * 0.5 },
-    get MAXIMUM() { return window.innerHeight * 0.8 }
+    get MAXIMUM() { 
+      // Calculate available height based on panel and content constraints
+      const panel = document.querySelector('.summarizer-panel')
+      const panelContent = document.querySelector('.panel-content')
+      const panelHeader = document.querySelector('.panel-header')
+      
+      if (!panel || !panelContent || !panelHeader) {
+        return window.innerHeight * 0.8 // Fallback to original calculation
+      }
+      
+      const panelHeight = panel.offsetHeight
+      const headerHeight = panelHeader.offsetHeight
+      const contentHeight = panelContent.offsetHeight
+      
+      // Available height is total panel height minus header and some content margin
+      const availableHeight = panelHeight - headerHeight - 100 // 100px margin for content
+      
+      console.log('📐 MAXIMUM calculation:')
+      console.log('- Panel height:', panelHeight)
+      console.log('- Header height:', headerHeight)
+      console.log('- Content height:', contentHeight)
+      console.log('- Available height:', availableHeight)
+      console.log('- Original calculation:', window.innerHeight * 0.8)
+      
+      return Math.min(availableHeight, window.innerHeight * 0.8)
+    }
   }
   
   // Debug function to log all size values
@@ -119,10 +144,8 @@ function initializeExtension() {
     if (!chatSection) return
     
     console.log('🎯 setChatHeight called with:', height)
-    chatSection.style.height = height + 'px'
-    console.log('🎯 Applied height, actual height now:', getCurrentChatHeight())
     
-    // Update CSS classes based on height
+    // Update CSS classes BEFORE setting height to remove max-height constraint
     const minimumSize = getMinimumChatSize()
     const maxSize = CHAT_SIZES.MAXIMUM
     const maxThreshold = maxSize - 10 // Same threshold as getNextChatSize
@@ -131,13 +154,32 @@ function initializeExtension() {
     if (height <= minThreshold) {
       chatSection.classList.add('collapsed')
       chatSection.classList.remove('expanded')
+      console.log('🏷️ Applied CSS classes: collapsed=true, expanded=false')
     } else if (height >= maxThreshold) {
       chatSection.classList.add('expanded')
       chatSection.classList.remove('collapsed')
+      console.log('🏷️ Applied CSS classes: collapsed=false, expanded=true')
     } else {
       chatSection.classList.remove('collapsed')
       chatSection.classList.remove('expanded')
+      console.log('🏷️ Applied CSS classes: collapsed=false, expanded=false (intermediate)')
     }
+    
+    // Force a reflow to apply the CSS class changes
+    chatSection.offsetHeight
+    
+    // Now set the height after CSS constraints are removed
+    chatSection.style.setProperty('height', height + 'px', 'important')
+    console.log('🎯 Applied height, actual height now:', getCurrentChatHeight())
+    
+    // Check what CSS constraints are still active
+    const computedStyle = window.getComputedStyle(chatSection)
+    console.log('🔍 CSS max-height:', computedStyle.maxHeight)
+    console.log('🔍 CSS height:', computedStyle.height)
+    console.log('🔍 CSS classes:', chatSection.classList.toString())
+    console.log('🔍 Has expanded class:', chatSection.classList.contains('expanded'))
+    
+    console.log('🏷️ Final height after CSS classes:', getCurrentChatHeight())
     
     // Save to storage
     chrome.storage.local.set({ 
@@ -199,7 +241,12 @@ function initializeExtension() {
   
   // Update expand button arrow direction
   function updateExpandButtonArrows() {
-    if (!chatExpandBtn) return
+    console.log('🚀 updateExpandButtonArrows() called')
+    
+    if (!chatExpandBtn) {
+      console.log('❌ No chatExpandBtn found!')
+      return
+    }
     
     const currentHeight = getCurrentChatHeight()
     const maxSize = CHAT_SIZES.MAXIMUM
@@ -217,6 +264,7 @@ function initializeExtension() {
     
     // Update arrow direction based on current height, not next size
     const svg = chatExpandBtn.querySelector('svg')
+    console.log('🔍 SVG element found:', !!svg)
     if (svg) {
       // Always use the same up arrow SVG content
       svg.innerHTML = `
@@ -225,17 +273,34 @@ function initializeExtension() {
       `
       
       // Simple check: if we're at or near maximum height, show down arrows
+      console.log('🔢 About to check condition: currentHeight >= maxThreshold')
+      console.log('🔢 Values:', currentHeight, '>=', maxThreshold, '=', currentHeight >= maxThreshold)
+      
       if (currentHeight >= maxThreshold) {
+        console.log('✅ CONDITION TRUE - entering max height branch')
         // At max height - next action will be collapse
         chatExpandBtn.classList.add('expanded')
         chatExpandBtn.title = 'Collapse chat'
         console.log('🔽 ARROWS: DOWN (collapse) - added expanded class for 180deg rotation')
+        
+        // Visual debugging - temporarily add background color
+        chatExpandBtn.style.background = 'rgba(255, 0, 0, 0.3) !important'
+        console.log('🎨 Added red background for visual confirmation')
       } else {
+        console.log('❌ CONDITION FALSE - entering non-max height branch')
         // Not at max height - next action will be expand
         chatExpandBtn.classList.remove('expanded')
         chatExpandBtn.title = 'Expand chat'
         console.log('🔼 ARROWS: UP (expand) - removed expanded class')
+        
+        // Remove visual debugging background
+        chatExpandBtn.style.background = 'transparent !important'
       }
+      
+      // Check computed styles
+      const computedTransform = window.getComputedStyle(chatExpandBtn).transform
+      console.log('💄 Computed transform:', computedTransform)
+      console.log('💄 Button classList:', chatExpandBtn.classList.toString())
       console.log('After update - Button has expanded class:', chatExpandBtn.classList.contains('expanded'))
       console.log('===================')
     }
