@@ -354,7 +354,8 @@ function initializeExtension() {
       defaultPrompts = {
         eli5: PROMPTS.eli5,
         standard: PROMPTS.standard,
-        phd: PROMPTS.expert  // Map phd to expert for backward compatibility
+        phd: PROMPTS.expert,  // Map phd to expert for backward compatibility
+        perspectives: PROMPTS.perspectives
       };
       
       console.log('📝 Loaded centralized prompts:', PROMPTS);
@@ -368,13 +369,15 @@ function initializeExtension() {
       PROMPTS = {
         eli5: "Summarize this content in simple terms.",
         standard: "Summarize this content clearly.", 
-        expert: "Provide a detailed summary of this content."
+        expert: "Provide a detailed summary of this content.",
+        perspectives: "Analyze this content from 3 different perspectives."
       };
       
       defaultPrompts = {
         eli5: PROMPTS.eli5,
         standard: PROMPTS.standard,
-        phd: PROMPTS.expert
+        phd: PROMPTS.expert,
+        perspectives: PROMPTS.perspectives
       };
       
       return PROMPTS;
