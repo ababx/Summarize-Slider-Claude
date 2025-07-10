@@ -1988,6 +1988,32 @@ function initializeExtension() {
   // Listen for messages from the content script
   window.addEventListener("message", (event) => {
     if (event.data.action === "summaryResult") {
+      // Check if this was a perspectives extraction request
+      if (event.data.complexity === "perspectives") {
+        // Remove any existing extraction messages
+        const messages = chatMessages.querySelectorAll('.chat-message')
+        if (messages.length > 0) {
+          messages[messages.length - 1].remove()
+        }
+        
+        if (event.data.error) {
+          addChatMessage('assistant', `Error: ${event.data.error}`)
+        } else {
+          // Store the page content and trigger perspectives analysis
+          if (event.data.pageContent) {
+            storePageContent(event.data.pageContent)
+            updateChatState()
+            
+            // Now call generatePerspectives again with the extracted content
+            generatePerspectives()
+          } else {
+            addChatMessage('assistant', "Error: Could not extract page content for perspectives analysis.")
+          }
+        }
+        return
+      }
+      
+      // Regular summary handling
       loadingIndicator.classList.add("hidden")
       // Reset loading text for next time
       loadingText.textContent = "Extracting content..."
@@ -2501,6 +2527,25 @@ function initializeExtension() {
     const typingId = addChatMessage('assistant', randomMessage, true)
     
     try {
+      // If no page content yet, extract it now
+      if (!pageContent) {
+        // Update loading message to show extraction
+        removeChatMessage(typingId)
+        const extractingId = addChatMessage('assistant', "📄 Extracting page content for analysis...", true)
+        
+        // Request page content extraction from content script
+        window.parent.postMessage({
+          action: "extractContent",
+          complexity: "perspectives",
+          model: "temp",
+          apiKey: null,
+          customPrompt: null
+        }, "*")
+        
+        // The message listener will handle the response and call generatePerspectives again
+        return
+      }
+      
       // Use same model/API key logic as summarization
       const defaultModel = getDefaultModel()
       const provider = providers[defaultModel.provider]
