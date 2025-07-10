@@ -2195,7 +2195,7 @@ function initializeExtension() {
     
     // Initialize three perspectives button state
     if (threePerspectivesBtn) {
-      threePerspectivesBtn.disabled = true // Start disabled until content is available
+      threePerspectivesBtn.disabled = false // Start enabled - we'll extract content if needed
     }
     
     // Initialize chat area with proper sizing
@@ -2445,8 +2445,9 @@ function initializeExtension() {
     // Chat is now always available - no locked state
     console.log('Chat state updated. Page content length:', pageContent?.length || 0)
     
-    // Enable/disable three perspectives button based on content availability
-    const shouldDisable = !pageContent || pageContent.length === 0
+    // Enable three perspectives button immediately if we have any content
+    // Even if pageContent is null, we can still extract content on demand
+    const shouldDisable = false // Always enable - we'll extract content if needed
     console.log('Three perspectives button disabled:', shouldDisable)
     if (threePerspectivesBtn) {
       threePerspectivesBtn.disabled = shouldDisable
@@ -2489,8 +2490,15 @@ function initializeExtension() {
   async function generatePerspectives() {
     console.log('generatePerspectives called!')
     
-    // Show typing indicator in chat
-    const typingId = addChatMessage('assistant', '...', true)
+    // Show engaging loading state in chat
+    const loadingMessages = [
+      "🔍 Analyzing content through multiple lenses...",
+      "🧠 Identifying the most revealing perspectives...", 
+      "⚖️ Examining different values and assumptions...",
+      "🎯 Finding where reasonable people might disagree..."
+    ]
+    const randomMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
+    const typingId = addChatMessage('assistant', randomMessage, true)
     
     try {
       // Use same model/API key logic as summarization
