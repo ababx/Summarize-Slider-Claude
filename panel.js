@@ -2342,8 +2342,8 @@ function initializeExtension() {
     // Click on chat section to expand based on current size
     if (chatSection) {
       chatSection.addEventListener('click', (e) => {
-        // Don't trigger if clicking on resize handle or expand button
-        if (e.target.closest('.resize-handle') || e.target.closest('.chat-expand-btn')) {
+        // Don't trigger if clicking on resize handle
+        if (e.target.closest('.resize-handle')) {
           return
         }
         
@@ -2419,8 +2419,8 @@ function initializeExtension() {
     
     // Click handler for cycling through size states - now on the entire header
     resizeHandle.addEventListener('click', (e) => {
-      // Only handle click if it's not a drag operation and not on expand button
-      if (!e.target.closest('.chat-expand-btn') && !dragStarted) {
+      // Only handle click if it's not a drag operation
+      if (!dragStarted) {
         e.preventDefault()
         
         console.log('🔘 HEADER CLICKED')
@@ -2920,10 +2920,6 @@ Please respond naturally as a helpful assistant.`
     
     // Mouse down on handle
     resizeHandle.addEventListener('mousedown', (e) => {
-      // Don't interfere with expand button clicks
-      if (e.target.closest('.chat-expand-btn')) {
-        return
-      }
       
       dragStarted = false
       dragStartY = e.clientY
@@ -2994,10 +2990,6 @@ Please respond naturally as a helpful assistant.`
     
     // Touch events for mobile support
     resizeHandle.addEventListener('touchstart', (e) => {
-      // Only start resizing if touching the resize bar area, not the expand button
-      if (e.target.closest('.chat-expand-btn')) {
-        return // Don't start resize if touching the expand button
-      }
       
       isResizing = true
       startY = e.touches[0].clientY
