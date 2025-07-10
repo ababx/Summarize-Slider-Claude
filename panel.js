@@ -2478,7 +2478,7 @@ function initializeExtension() {
       }, "*")
       
       // Show temporary message
-      addChatMessage('assistant', 'Extracting page content...')
+      addChatMessageWithLoader('assistant', 'Extracting page content', true)
       chatInput.value = ''
       chatSendBtn.disabled = true
       
@@ -2502,22 +2502,33 @@ function initializeExtension() {
   async function generatePerspectives() {
     console.log('generatePerspectives called!')
     
-    // Show engaging loading state in chat
+    // Show engaging loading state in chat with animation
     const loadingMessages = [
-      "🔍 Analyzing content through multiple lenses...",
-      "🧠 Identifying the most revealing perspectives...", 
-      "⚖️ Examining different values and assumptions...",
-      "🎯 Finding where reasonable people might disagree..."
+      "🔍 Analyzing content through multiple lenses",
+      "🧠 Identifying the most revealing perspectives", 
+      "⚖️ Examining different values and assumptions",
+      "🎯 Finding where reasonable people might disagree",
+      "💡 Uncovering hidden assumptions and blind spots",
+      "🌐 Exploring different worldviews and priorities",
+      "🔬 Dissecting the core arguments and evidence",
+      "🎭 Considering various stakeholder perspectives"
     ]
     const randomMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
-    const typingId = addChatMessage('assistant', randomMessage, true)
+    const typingId = addChatMessageWithLoader('assistant', randomMessage, true)
     
     try {
       // If no page content yet, extract it now using the same method as chat
       if (!pageContent) {
         // Update loading message to show extraction
         removeChatMessage(typingId)
-        addChatMessage('assistant', "📄 Extracting page content for analysis...", true)
+        const extractionMessages = [
+          "📄 Extracting page content for analysis",
+          "📖 Reading through the page content",
+          "🔎 Gathering information from the page",
+          "📋 Collecting content for perspective analysis"
+        ]
+        const randomExtractionMessage = extractionMessages[Math.floor(Math.random() * extractionMessages.length)]
+        addChatMessageWithLoader('assistant', randomExtractionMessage, true)
         
         // Request page content extraction from content script (same as chat)
         console.log('🔄 Requesting content extraction for perspectives...')
@@ -2618,7 +2629,7 @@ function initializeExtension() {
 
   async function processChatMessage(message) {
     // Show typing indicator
-    const typingId = addChatMessage('assistant', '...', true)
+    const typingId = addChatMessageWithLoader('assistant', 'Thinking', true)
     
     try {
       // Use same model/API key logic as summarization
@@ -2765,6 +2776,50 @@ Please respond naturally as a helpful assistant.`
     messageDiv.innerHTML = `
       <div class="chat-message-content">${formattedContent}</div>
     `
+    
+    chatMessages.appendChild(messageDiv)
+    chatMessages.scrollTop = chatMessages.scrollHeight
+    
+    // Auto-resize chat to accommodate new content
+    autoResizeChatToContent()
+    
+    // Update expand button arrows based on new content state
+    updateExpandButtonArrows()
+    
+    return messageId
+  }
+  
+  function addChatMessageWithLoader(role, content, isTyping = false) {
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const messageDiv = document.createElement('div')
+    messageDiv.className = `chat-message chat-message-${role}`
+    messageDiv.id = messageId
+    
+    if (isTyping) {
+      messageDiv.classList.add('typing')
+    }
+    
+    // Format content with loader animation
+    let formattedContent = content
+    if (role === 'assistant' && !isTyping) {
+      formattedContent = renderChatMarkdown(content)
+    } else {
+      // For typing indicators, escape HTML
+      formattedContent = content.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+    
+    if (isTyping) {
+      messageDiv.innerHTML = `
+        <div class="chat-message-content">
+          <div class="chat-loading-spinner"></div>
+          <div class="chat-loading-text loading-ellipses">${formattedContent}</div>
+        </div>
+      `
+    } else {
+      messageDiv.innerHTML = `
+        <div class="chat-message-content">${formattedContent}</div>
+      `
+    }
     
     chatMessages.appendChild(messageDiv)
     chatMessages.scrollTop = chatMessages.scrollHeight
