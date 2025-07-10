@@ -1988,30 +1988,6 @@ function initializeExtension() {
   // Listen for messages from the content script
   window.addEventListener("message", (event) => {
     if (event.data.action === "summaryResult") {
-      // Check if this was a perspectives extraction request
-      if (event.data.complexity === "perspectives") {
-        // Remove any existing extraction messages
-        const messages = chatMessages.querySelectorAll('.chat-message')
-        if (messages.length > 0) {
-          messages[messages.length - 1].remove()
-        }
-        
-        if (event.data.error) {
-          addChatMessage('assistant', `Error: ${event.data.error}`)
-        } else {
-          // Store the page content and trigger perspectives analysis
-          if (event.data.pageContent) {
-            storePageContent(event.data.pageContent)
-            updateChatState()
-            
-            // Now call generatePerspectives again with the extracted content
-            generatePerspectives()
-          } else {
-            addChatMessage('assistant', "Error: Could not extract page content for perspectives analysis.")
-          }
-        }
-        return
-      }
       
       // Regular summary handling
       loadingIndicator.classList.add("hidden")
@@ -2081,13 +2057,23 @@ function initializeExtension() {
         storePageContent(event.data.pageContent)
         updateChatState()
         
+        console.log('✅ Chat content extraction successful, length:', event.data.pageContent.length)
+        
         // Remove the "Extracting..." message
         const messages = chatMessages.querySelectorAll('.chat-message')
         if (messages.length > 0) {
           messages[messages.length - 1].remove()
         }
         
-        // Send the pending message
+        // Check if this was for perspectives generation
+        if (window.pendingPerspectivesGeneration) {
+          console.log('🔄 Triggering pending perspectives generation...')
+          window.pendingPerspectivesGeneration = false
+          generatePerspectives()
+          return
+        }
+        
+        // Send the pending chat message
         if (pendingChatMessage) {
           const messageToSend = pendingChatMessage
           pendingChatMessage = null
@@ -2527,22 +2513,32 @@ function initializeExtension() {
     const typingId = addChatMessage('assistant', randomMessage, true)
     
     try {
-      // If no page content yet, extract it now
+      // If no page content yet, extract it now using the same method as chat
       if (!pageContent) {
         // Update loading message to show extraction
         removeChatMessage(typingId)
-        const extractingId = addChatMessage('assistant', "📄 Extracting page content for analysis...", true)
+        addChatMessage('assistant', "📄 Extracting page content for analysis...", true)
         
-        // Request page content extraction from content script
+        // Request page content extraction from content script (same as chat)
+        console.log('🔄 Requesting content extraction for perspectives...')
         window.parent.postMessage({
-          action: "extractContent",
-          complexity: "perspectives",
-          model: "temp",
-          apiKey: null,
-          customPrompt: null
+          action: "extractContentForChat"
         }, "*")
         
-        // The message listener will handle the response and call generatePerspectives again
+        // Set a timeout to handle if extraction fails
+        setTimeout(() => {
+          if (!pageContent) {
+            console.error('⏰ Content extraction timed out for perspectives')
+            const messages = chatMessages.querySelectorAll('.chat-message')
+            if (messages.length > 0) {
+              messages[messages.length - 1].remove()
+            }
+            addChatMessage('assistant', "Content extraction is taking longer than expected. Please try clicking the regular 'Summarize' button first, then try 3 Perspectives again.")
+          }
+        }, 10000) // 10 second timeout
+        
+        // Store the function to call after extraction
+        window.pendingPerspectivesGeneration = true
         return
       }
       
@@ -2571,6 +2567,10 @@ function initializeExtension() {
       // Get model to send
       const modelToSend = defaultModel.id
       
+      console.log('🚀 Sending perspectives request to background script...')
+      console.log('📊 Content length:', pageContent?.length)
+      console.log('🔧 Model:', modelToSend)
+      
       // Send request to background script for perspectives analysis
       chrome.runtime.sendMessage(
         {
@@ -2584,12 +2584,16 @@ function initializeExtension() {
           analysisType: "perspectives"
         },
         (response) => {
+          console.log('📥 Received perspectives API response:', response)
+          
           // Remove typing indicator
           removeChatMessage(typingId)
           
           if (response && response.error) {
+            console.error('❌ Perspectives API error:', response.error)
             addChatMessage('assistant', `Error: ${response.error}`)
           } else if (response && response.summary) {
+            console.log('✅ Perspectives analysis successful')
             // Add perspectives as a chat message
             addChatMessage('assistant', response.summary)
             
@@ -2599,6 +2603,9 @@ function initializeExtension() {
               updateUsageDisplay()
               chrome.storage.local.set({ summarizeUsage })
             }
+          } else {
+            console.error('❌ Unexpected response format:', response)
+            addChatMessage('assistant', 'Error: Unexpected response format from perspectives analysis.')
           }
         }
       )
