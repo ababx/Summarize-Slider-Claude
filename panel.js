@@ -2415,20 +2415,21 @@ function initializeExtension() {
   
   // Initialize chat expand/collapse button functionality
   function initializeChatExpandButton() {
-    if (!chatExpandBtn || !chatSection) return
+    if (!resizeHandle || !chatSection) return
     
-    // Click handler for cycling through size states
-    chatExpandBtn.addEventListener('click', (e) => {
-      e.stopPropagation() // Prevent triggering resize handle drag
-      e.preventDefault() // Prevent any default behavior
-      
-      console.log('🔘 BUTTON CLICKED')
-      const beforeHeight = getCurrentChatHeight()
-      const nextSize = getNextChatSize()
-      console.log('Button click - Before height:', beforeHeight, 'Will set to:', nextSize)
-      console.log('Requested change:', nextSize - beforeHeight, 'pixels')
-      
-      setChatHeight(nextSize)
+    // Click handler for cycling through size states - now on the entire header
+    resizeHandle.addEventListener('click', (e) => {
+      // Only handle click if it's not a drag operation and not on expand button
+      if (!e.target.closest('.chat-expand-btn') && !dragStarted) {
+        e.preventDefault()
+        
+        console.log('🔘 HEADER CLICKED')
+        const beforeHeight = getCurrentChatHeight()
+        const nextSize = getNextChatSize()
+        console.log('Header click - Before height:', beforeHeight, 'Will set to:', nextSize)
+        console.log('Requested change:', nextSize - beforeHeight, 'pixels')
+        
+        setChatHeight(nextSize)
       
       // Wait longer and check if height actually changed
       setTimeout(() => {
@@ -2914,18 +2915,22 @@ Please respond naturally as a helpful assistant.`
       }
     }, 200)
     
-    // Mouse down on handle (only on the drag bar, not the expand button)
+    let dragStarted = false
+    let dragStartY = 0
+    
+    // Mouse down on handle
     resizeHandle.addEventListener('mousedown', (e) => {
-      // Only start resizing if clicking on the resize bar area, not the expand button
+      // Don't interfere with expand button clicks
       if (e.target.closest('.chat-expand-btn')) {
-        return // Don't start resize if clicking the expand button
+        return
       }
       
-      isResizing = true
+      dragStarted = false
+      dragStartY = e.clientY
       startY = e.clientY
       startHeight = getCurrentChatHeight()
       
-      resizeHandle.classList.add('dragging')
+      // Don't start visual drag state immediately
       document.body.style.cursor = 'ns-resize'
       document.body.style.userSelect = 'none'
       
@@ -2934,6 +2939,16 @@ Please respond naturally as a helpful assistant.`
     
     // Mouse move - resize
     document.addEventListener('mousemove', (e) => {
+      if (!startY) return
+      
+      // Start drag if moved more than 5 pixels
+      const deltaY = Math.abs(e.clientY - dragStartY)
+      if (!dragStarted && deltaY > 5) {
+        dragStarted = true
+        isResizing = true
+        resizeHandle.classList.add('dragging')
+      }
+      
       if (!isResizing) return
       
       const deltaY = startY - e.clientY // Inverted because we want up = bigger
@@ -2955,7 +2970,9 @@ Please respond naturally as a helpful assistant.`
     })
     
     // Mouse up - stop resizing
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', (e) => {
+      const wasDragging = dragStarted
+      
       if (isResizing) {
         isResizing = false
         resizeHandle.classList.remove('dragging')
@@ -2964,6 +2981,14 @@ Please respond naturally as a helpful assistant.`
         
         // Final arrow update after resize is complete
         updateExpandButtonArrows()
+      }
+      
+      // Reset drag tracking
+      if (startY) {
+        startY = 0
+        dragStarted = false
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
       }
     })
     
