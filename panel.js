@@ -2417,27 +2417,23 @@ function initializeExtension() {
   function initializeChatExpandButton() {
     if (!resizeHandle || !chatSection) return
     
-    // Click handler for cycling through size states - now on the entire header
+    // Simple click handler for cycling through size states
     resizeHandle.addEventListener('click', (e) => {
-      // Only handle click if it's not a drag operation
-      if (!dragStarted) {
-        console.log('🔘 HEADER CLICKED')
-        const beforeHeight = getCurrentChatHeight()
-        const nextSize = getNextChatSize()
-        console.log('Header click - Before height:', beforeHeight, 'Will set to:', nextSize)
-        console.log('Requested change:', nextSize - beforeHeight, 'pixels')
-        
-        setChatHeight(nextSize)
-        e.preventDefault()
-        e.stopPropagation()
+      console.log('🔘 HEADER CLICKED')
+      const beforeHeight = getCurrentChatHeight()
+      const nextSize = getNextChatSize()
+      console.log('Header click - Before height:', beforeHeight, 'Will set to:', nextSize)
+      console.log('Requested change:', nextSize - beforeHeight, 'pixels')
       
-      // Wait longer and check if height actually changed
+      setChatHeight(nextSize)
+      
+      // Wait and check if height actually changed
       setTimeout(() => {
         const actualHeight = getCurrentChatHeight()
         console.log('After setChatHeight - Actual height is now:', actualHeight, 'Expected:', nextSize)
         updateExpandButtonArrows()
         console.log('Forced arrow update after button click')
-      }, 50) // Increased delay
+      }, 50)
     })
     
     // Initialize expand button arrows
@@ -2918,18 +2914,15 @@ Please respond naturally as a helpful assistant.`
     let dragStarted = false
     let dragStartY = 0
     
-    // Mouse down on handle
-    resizeHandle.addEventListener('mousedown', (e) => {
-      console.log('🔽 MOUSEDOWN on header')
-      
-      dragStarted = false
-      dragStartY = e.clientY
-      startY = e.clientY
-      startHeight = getCurrentChatHeight()
-      
-      // Don't prevent default here - let click events work normally
-      // Only prevent when we start dragging
-    })
+    // TEMPORARILY DISABLED - Mouse down on handle was blocking all interactions
+    // resizeHandle.addEventListener('mousedown', (e) => {
+    //   console.log('🔽 MOUSEDOWN on header')
+    //   
+    //   dragStarted = false
+    //   dragStartY = e.clientY
+    //   startY = e.clientY
+    //   startHeight = getCurrentChatHeight()
+    // })
     
     // Mouse move - resize
     document.addEventListener('mousemove', (e) => {
