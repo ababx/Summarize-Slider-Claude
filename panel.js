@@ -2421,8 +2421,6 @@ function initializeExtension() {
     resizeHandle.addEventListener('click', (e) => {
       // Only handle click if it's not a drag operation
       if (!dragStarted) {
-        e.preventDefault()
-        
         console.log('🔘 HEADER CLICKED')
         const beforeHeight = getCurrentChatHeight()
         const nextSize = getNextChatSize()
@@ -2430,6 +2428,8 @@ function initializeExtension() {
         console.log('Requested change:', nextSize - beforeHeight, 'pixels')
         
         setChatHeight(nextSize)
+        e.preventDefault()
+        e.stopPropagation()
       
       // Wait longer and check if height actually changed
       setTimeout(() => {
@@ -2920,17 +2920,15 @@ Please respond naturally as a helpful assistant.`
     
     // Mouse down on handle
     resizeHandle.addEventListener('mousedown', (e) => {
+      console.log('🔽 MOUSEDOWN on header')
       
       dragStarted = false
       dragStartY = e.clientY
       startY = e.clientY
       startHeight = getCurrentChatHeight()
       
-      // Don't start visual drag state immediately
-      document.body.style.cursor = 'ns-resize'
-      document.body.style.userSelect = 'none'
-      
-      e.preventDefault()
+      // Don't prevent default here - let click events work normally
+      // Only prevent when we start dragging
     })
     
     // Mouse move - resize
@@ -2943,6 +2941,8 @@ Please respond naturally as a helpful assistant.`
         dragStarted = true
         isResizing = true
         resizeHandle.classList.add('dragging')
+        document.body.style.cursor = 'ns-resize'
+        document.body.style.userSelect = 'none'
       }
       
       if (!isResizing) return
@@ -2968,6 +2968,7 @@ Please respond naturally as a helpful assistant.`
     // Mouse up - stop resizing
     document.addEventListener('mouseup', (e) => {
       const wasDragging = dragStarted
+      console.log('🔼 MOUSEUP, was dragging:', wasDragging)
       
       if (isResizing) {
         isResizing = false
