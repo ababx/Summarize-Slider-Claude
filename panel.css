@@ -1635,7 +1635,7 @@ select,
   width: 100%;
   height: 40px;
   padding: 0 16px;
-  cursor: ns-resize;
+  cursor: pointer;
 }
 
 .chat-title {

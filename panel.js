@@ -2924,105 +2924,31 @@ Please respond naturally as a helpful assistant.`
     //   startHeight = getCurrentChatHeight()
     // })
     
-    // Mouse move - resize
-    document.addEventListener('mousemove', (e) => {
-      if (!startY) return
-      
-      // Start drag if moved more than 5 pixels
-      const deltaY = Math.abs(e.clientY - dragStartY)
-      if (!dragStarted && deltaY > 5) {
-        dragStarted = true
-        isResizing = true
-        resizeHandle.classList.add('dragging')
-        document.body.style.cursor = 'ns-resize'
-        document.body.style.userSelect = 'none'
-      }
-      
-      if (!isResizing) return
-      
-      const deltaY = startY - e.clientY // Inverted because we want up = bigger
-      
-      // Use our defined min/max values for full flexibility
-      const minHeight = getMinimumChatSize()
-      const maxHeight = CHAT_SIZES.MAXIMUM
-      
-      // Allow smooth resizing with full range from min to max
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
-      
-      // Use setChatHeight to handle height, CSS classes, and storage
-      setChatHeight(newHeight)
-      
-      // Update expand button arrows to reflect new state
-      updateExpandButtonArrows()
-      
-      e.preventDefault()
-    })
+    // DISABLED - Mouse move was blocking interactions
+    // document.addEventListener('mousemove', (e) => {
+    //   if (!startY) return
+    //   // ... resize logic disabled
+    // })
     
-    // Mouse up - stop resizing
-    document.addEventListener('mouseup', (e) => {
-      const wasDragging = dragStarted
-      console.log('🔼 MOUSEUP, was dragging:', wasDragging)
-      
-      if (isResizing) {
-        isResizing = false
-        resizeHandle.classList.remove('dragging')
-        document.body.style.cursor = ''
-        document.body.style.userSelect = ''
-        
-        // Final arrow update after resize is complete
-        updateExpandButtonArrows()
-      }
-      
-      // Reset drag tracking
-      if (startY) {
-        startY = 0
-        dragStarted = false
-        document.body.style.cursor = ''
-        document.body.style.userSelect = ''
-      }
-    })
+    // DISABLED - Mouse up was blocking interactions
+    // document.addEventListener('mouseup', (e) => {
+    //   // ... mouseup logic disabled
+    // })
     
-    // Touch events for mobile support
-    resizeHandle.addEventListener('touchstart', (e) => {
-      
-      isResizing = true
-      startY = e.touches[0].clientY
-      startHeight = getCurrentChatHeight()
-      
-      resizeHandle.classList.add('dragging')
-      e.preventDefault()
-    })
+    // DISABLED - All touch events were blocking interactions
+    // resizeHandle.addEventListener('touchstart', (e) => {
+    //   // ... touch start logic disabled
+    // })
     
-    document.addEventListener('touchmove', (e) => {
-      if (!isResizing) return
-      
-      const deltaY = startY - e.touches[0].clientY
-      
-      // Use our defined min/max values for full flexibility
-      const minHeight = getMinimumChatSize()
-      const maxHeight = CHAT_SIZES.MAXIMUM
-      
-      // Allow smooth resizing with full range from min to max
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
-      
-      // Use setChatHeight to handle height, CSS classes, and storage
-      setChatHeight(newHeight)
-      
-      // Update expand button arrows to reflect new state
-      updateExpandButtonArrows()
-      
-      e.preventDefault()
-    })
+    // DISABLED - Touch move was blocking interactions  
+    // document.addEventListener('touchmove', (e) => {
+    //   // ... touch move logic disabled
+    // })
     
-    document.addEventListener('touchend', () => {
-      if (isResizing) {
-        isResizing = false
-        resizeHandle.classList.remove('dragging')
-        
-        // Final arrow update after resize is complete
-        updateExpandButtonArrows()
-      }
-    })
+    // DISABLED - Touch end was blocking interactions
+    // document.addEventListener('touchend', () => {
+    //   // ... touch end logic disabled
+    // })
   }
 }
 
