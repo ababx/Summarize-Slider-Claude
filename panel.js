@@ -332,7 +332,7 @@ function initializeExtension() {
   // Remove resetToDefault element reference since it's no longer in HTML
 
   // State
-  let currentProvider = "openai"
+  let currentProvider = "google"
   let currentTabId = null
   let summarizeUsage = 0
   let summarizeDefault = "gemini-flash-2.5"
@@ -1581,10 +1581,10 @@ function initializeExtension() {
           }
         }
         
-        // If all providers have keys or none found, default to openai
+        // If all providers have keys or none found, default to google
         if (!hasFoundProviderWithoutKey) {
-          currentProvider = 'openai'
-          await switchTab('openai')
+          currentProvider = 'google'
+          await switchTab('google')
         }
         
         await updateSummarizeSection()
