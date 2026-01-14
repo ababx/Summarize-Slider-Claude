@@ -24,7 +24,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-5.2", "openai-gpt-5-mini", "openai-gpt-5-nano", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "x-grok-4.1", "perplexity-sonar"]
+    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-5.2", "openai-gpt-5-mini", "openai-gpt-5-nano", "anthropic-claude-opus-4.5", "anthropic-claude-sonnet-4.5", "anthropic-claude-haiku-4.5", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "x-grok-4.1", "perplexity-sonar"]
   })
 }
 
@@ -64,9 +64,9 @@ export async function POST(req: NextRequest) {
       "openai-gpt-5-mini": { providerName: "openai", model: "gpt-5-mini", requiresApiKey: true },
       "openai-gpt-5-nano": { providerName: "openai", model: "gpt-5-nano", requiresApiKey: true },
       "google-gemini-2.5-pro": { providerName: "google", model: "gemini-1.5-pro", requiresApiKey: true },
-      "anthropic-claude-opus-4": { providerName: "anthropic", model: "claude-3-opus-20240229", requiresApiKey: true },
-      "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
-      "anthropic-claude-3.5-haiku": { providerName: "anthropic", model: "claude-3-5-haiku-20241022", requiresApiKey: true },
+      "anthropic-claude-opus-4.5": { providerName: "anthropic", model: "claude-opus-4-5", requiresApiKey: true },
+      "anthropic-claude-sonnet-4.5": { providerName: "anthropic", model: "claude-sonnet-4-5", requiresApiKey: true },
+      "anthropic-claude-haiku-4.5": { providerName: "anthropic", model: "claude-haiku-4-5", requiresApiKey: true },
       "x-grok-3": { providerName: "xai", model: "grok-2-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" },
       "x-grok-4.1": { providerName: "xai", model: "grok-4-1-fast-non-reasoning", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
     }
