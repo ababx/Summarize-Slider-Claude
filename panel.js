@@ -558,14 +558,14 @@ function initializeExtension() {
   // Models data (Gemini Flash Lite as default, separate from user API keys)
   // Model IDs match the API expected format
   const models = [
-    { id: "gemini-flash-lite-2.5", name: "Gemini Flash Lite 2.5", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash-lite" },
-    { id: "gemini-flash-2.5", name: "Gemini Flash 2.5", provider: "google", isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
-    { id: "perplexity-sonar", name: "Perplexity Sonar", provider: "perplexity", apiId: "perplexity-sonar" },
-    { id: "gemini-flash-lite-2.5-user", name: "Gemini Flash Lite 2.5", provider: "google", apiId: "google-gemini-2.5-flash-lite" },
-    { id: "gemini-flash-2.5-user", name: "Gemini Flash 2.5", provider: "google", apiId: "google-gemini-2.5-flash" },
-    { id: "gemini-pro-2.5", name: "Gemini Pro 2.5", provider: "google", apiId: "google-gemini-2.5-pro" },
-    { id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
-    { id: "claude-opus-4", name: "Claude Opus 4", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
+    { id: "gemini-flash-lite-2.5", name: "Gemini 2.5 Flash Lite", provider: "google", isDefault: true, isSystemDefault: true, apiId: "google-gemini-2.5-flash-lite" },
+    { id: "gemini-flash-2.5", name: "Gemini 2.5 Flash", provider: "google", isSystemDefault: true, apiId: "google-gemini-2.5-flash" },
+    { id: "perplexity-sonar", name: "Sonar Pro", provider: "perplexity", apiId: "perplexity-sonar" },
+    { id: "gemini-flash-lite-2.5-user", name: "Gemini 2.5 Flash Lite", provider: "google", apiId: "google-gemini-2.5-flash-lite" },
+    { id: "gemini-flash-2.5-user", name: "Gemini 2.5 Flash", provider: "google", apiId: "google-gemini-2.5-flash" },
+    { id: "gemini-pro-2.5", name: "Gemini 2.5 Pro", provider: "google", apiId: "google-gemini-2.5-pro" },
+    { id: "claude-sonnet-4", name: "Claude 3.5 Sonnet", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
+    { id: "claude-opus-4", name: "Claude 3 Opus", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
     { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", provider: "anthropic", apiId: "anthropic-claude-3.5-haiku" },
     { id: "gpt-4o", name: "GPT-4o", provider: "openai", apiId: "openai-gpt-4o" },
     { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", apiId: "openai-gpt-4o-mini" },
@@ -574,7 +574,7 @@ function initializeExtension() {
     { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", provider: "openai", apiId: "openai-gpt-4.1-nano" },
     { id: "o3-mini", name: "o3 Mini", provider: "openai", apiId: "openai-o3-mini" },
     { id: "o1-mini", name: "o1 Mini", provider: "openai", apiId: "openai-o1-mini" },
-    { id: "grok-3", name: "Grok 3", provider: "xai", apiId: "x-grok-3" }
+    { id: "grok-2", name: "Grok 2 Latest", provider: "xai", apiId: "x-grok-3" }
   ]
 
   // Get models for a specific provider (exclude system defaults from provider lists)
@@ -949,7 +949,7 @@ function initializeExtension() {
     footerUsageCounter.textContent = `${summarizeUsage}/25 free monthly summaries used`
     
     // Keep footer text static - do NOT update defaultModelName
-    // defaultModelName should always show "Gemini Flash 2.5"
+    // defaultModelName should always show "Gemini 2.5 Flash"
     
     // Show/hide set default button and badge - show badge if current default IS Gemini Flash
     const setDefaultBadge = document.getElementById("setDefaultBadge")
@@ -1217,7 +1217,7 @@ function initializeExtension() {
       if (defaultModel && defaultModel.provider === providerId) {
         await setAsDefault('gemini-flash-2.5')
         chrome.storage.local.set({ summarizeDefault: 'gemini-flash-2.5' })
-        showNotification(`Default model reset to Gemini Flash 2.5`, 'info')
+        showNotification(`Default model reset to Gemini 2.5 Flash`, 'info')
       }
       
       // Update top nav
@@ -1643,7 +1643,7 @@ function initializeExtension() {
           } else {
             // No existing summary, show currently selected model
             const defaultModel = models.find(m => m.id === summarizeDefault)
-            const modelName = defaultModel ? defaultModel.name : 'Gemini Flash 2.5'
+            const modelName = defaultModel ? defaultModel.name : 'Gemini 2.5 Flash'
             complexityLabel.textContent = `${complexityLabels[complexityLevel]} • ${modelName}`
           }
         })
