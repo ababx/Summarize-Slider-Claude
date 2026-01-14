@@ -54,12 +54,12 @@ export async function POST(req: NextRequest) {
 
     // Model configuration mapping
     const modelMapping = {
-      "gemini-flash-lite-2.5": { providerName: "google", model: "gemini-2.0-flash-lite", requiresApiKey: false, useSystemKey: true },
-      "gemini-flash-2.5": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: false, useSystemKey: true },
-      "gemini-flash-lite-2.5-user": { providerName: "google", model: "gemini-2.0-flash-lite", requiresApiKey: true, useSystemKey: false },
-      "gemini-flash-2.5-user": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
-      "google-gemini-2.5-flash-lite": { providerName: "google", model: "gemini-2.0-flash-lite", requiresApiKey: true, useSystemKey: false },
-      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash-preview-05-20", requiresApiKey: true, useSystemKey: false },
+      "gemini-flash-lite-2.5": { providerName: "google", model: "gemini-2.5-flash-lite", requiresApiKey: false, useSystemKey: true },
+      "gemini-flash-2.5": { providerName: "google", model: "gemini-2.5-flash", requiresApiKey: false, useSystemKey: true },
+      "gemini-flash-lite-2.5-user": { providerName: "google", model: "gemini-2.5-flash-lite", requiresApiKey: true, useSystemKey: false },
+      "gemini-flash-2.5-user": { providerName: "google", model: "gemini-2.5-flash", requiresApiKey: true, useSystemKey: false },
+      "google-gemini-2.5-flash-lite": { providerName: "google", model: "gemini-2.5-flash-lite", requiresApiKey: true, useSystemKey: false },
+      "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash", requiresApiKey: true, useSystemKey: false },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
       "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
       "openai-gpt-4o-mini": { providerName: "openai", model: "gpt-4o-mini", requiresApiKey: true },
