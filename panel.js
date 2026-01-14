@@ -574,7 +574,7 @@ function initializeExtension() {
     { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", provider: "openai", apiId: "openai-gpt-4.1-nano" },
     { id: "o3-mini", name: "o3 Mini", provider: "openai", apiId: "openai-o3-mini" },
     { id: "o1-mini", name: "o1 Mini", provider: "openai", apiId: "openai-o1-mini" },
-    { id: "grok-2", name: "Grok 2 Latest", provider: "xai", apiId: "x-grok-3" }
+    { id: "grok-4.1", name: "Grok 4.1 Fast", provider: "xai", apiId: "x-grok-4.1" }
   ]
 
   // Get models for a specific provider (exclude system defaults from provider lists)

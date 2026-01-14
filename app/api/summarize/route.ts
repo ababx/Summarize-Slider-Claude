@@ -24,7 +24,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "perplexity-sonar"]
+    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "x-grok-4.1", "perplexity-sonar"]
   })
 }
 
@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
       "anthropic-claude-opus-4": { providerName: "anthropic", model: "claude-3-opus-20240229", requiresApiKey: true },
       "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
       "anthropic-claude-3.5-haiku": { providerName: "anthropic", model: "claude-3-5-haiku-20241022", requiresApiKey: true },
-      "x-grok-3": { providerName: "xai", model: "grok-2-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
+      "x-grok-3": { providerName: "xai", model: "grok-2-latest", requiresApiKey: true, baseURL: "https://api.x.ai/v1" },
+      "x-grok-4.1": { providerName: "xai", model: "grok-4-1-fast-non-reasoning", requiresApiKey: true, baseURL: "https://api.x.ai/v1" }
     }
 
     console.log("Model mapping lookup for:", model, "->", modelMapping[model])
