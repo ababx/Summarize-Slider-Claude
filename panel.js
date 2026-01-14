@@ -567,13 +567,9 @@ function initializeExtension() {
     { id: "claude-sonnet-4", name: "Claude 3.5 Sonnet", provider: "anthropic", apiId: "anthropic-claude-sonnet-4" },
     { id: "claude-opus-4", name: "Claude 3 Opus", provider: "anthropic", apiId: "anthropic-claude-opus-4" },
     { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", provider: "anthropic", apiId: "anthropic-claude-3.5-haiku" },
-    { id: "gpt-4o", name: "GPT-4o", provider: "openai", apiId: "openai-gpt-4o" },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", apiId: "openai-gpt-4o-mini" },
-    { id: "gpt-4.1", name: "GPT-4.1", provider: "openai", apiId: "openai-gpt-4.1" },
-    { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", provider: "openai", apiId: "openai-gpt-4.1-mini" },
-    { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", provider: "openai", apiId: "openai-gpt-4.1-nano" },
-    { id: "o3-mini", name: "o3 Mini", provider: "openai", apiId: "openai-o3-mini" },
-    { id: "o1-mini", name: "o1 Mini", provider: "openai", apiId: "openai-o1-mini" },
+    { id: "gpt-5.2", name: "GPT-5.2", provider: "openai", apiId: "openai-gpt-5.2" },
+    { id: "gpt-5-mini", name: "GPT-5 Mini", provider: "openai", apiId: "openai-gpt-5-mini" },
+    { id: "gpt-5-nano", name: "GPT-5 Nano", provider: "openai", apiId: "openai-gpt-5-nano" },
     { id: "grok-4.1", name: "Grok 4.1 Fast", provider: "xai", apiId: "x-grok-4.1" }
   ]
 

@@ -24,7 +24,7 @@ export async function GET() {
     message: "Summarize API is working", 
     timestamp: new Date().toISOString(),
     supportedMethods: ["POST"],
-    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-4o", "openai-gpt-4o-mini", "openai-gpt-4-turbo", "openai-gpt-3.5-turbo", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "x-grok-4.1", "perplexity-sonar"]
+    supportedModels: ["default", "gemini-flash-lite-2.5", "gemini-flash-2.5", "gemini-flash-2.5-user", "openai-gpt-5.2", "openai-gpt-5-mini", "openai-gpt-5-nano", "anthropic-claude-3.5-sonnet", "anthropic-claude-3.5-haiku", "anthropic-claude-3-opus", "anthropic-claude-3-sonnet", "anthropic-claude-3-haiku", "google-gemini-2.5-pro", "google-gemini-2.5-flash", "x-grok-3", "x-grok-4.1", "perplexity-sonar"]
   })
 }
 
@@ -60,13 +60,9 @@ export async function POST(req: NextRequest) {
       "google-gemini-2.5-flash-lite": { providerName: "google", model: "gemini-2.5-flash-lite", requiresApiKey: true, useSystemKey: false },
       "google-gemini-2.5-flash": { providerName: "google", model: "gemini-2.5-flash", requiresApiKey: true, useSystemKey: false },
       "perplexity-sonar": { providerName: "perplexity", model: "sonar-pro", requiresApiKey: true },
-      "openai-gpt-4o": { providerName: "openai", model: "gpt-4o", requiresApiKey: true },
-      "openai-gpt-4o-mini": { providerName: "openai", model: "gpt-4o-mini", requiresApiKey: true },
-      "openai-gpt-4.1": { providerName: "openai", model: "gpt-4.1", requiresApiKey: true },
-      "openai-gpt-4.1-mini": { providerName: "openai", model: "gpt-4.1-mini", requiresApiKey: true },
-      "openai-gpt-4.1-nano": { providerName: "openai", model: "gpt-4.1-nano", requiresApiKey: true },
-      "openai-o3-mini": { providerName: "openai", model: "o3-mini", requiresApiKey: true },
-      "openai-o1-mini": { providerName: "openai", model: "o1-mini", requiresApiKey: true },
+      "openai-gpt-5.2": { providerName: "openai", model: "gpt-5.2", requiresApiKey: true },
+      "openai-gpt-5-mini": { providerName: "openai", model: "gpt-5-mini", requiresApiKey: true },
+      "openai-gpt-5-nano": { providerName: "openai", model: "gpt-5-nano", requiresApiKey: true },
       "google-gemini-2.5-pro": { providerName: "google", model: "gemini-1.5-pro", requiresApiKey: true },
       "anthropic-claude-opus-4": { providerName: "anthropic", model: "claude-3-opus-20240229", requiresApiKey: true },
       "anthropic-claude-sonnet-4": { providerName: "anthropic", model: "claude-3-5-sonnet-20241022", requiresApiKey: true },
