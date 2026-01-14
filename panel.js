@@ -1242,6 +1242,8 @@ function initializeExtension() {
       // Refresh the display when closing
       await updateSummarizeSection()
     } else {
+      // Always switch to Google tab when opening popup
+      await switchTab('google')
       modelSelectorOverlay.classList.remove('hidden')
     }
   })
@@ -2054,10 +2056,8 @@ function initializeExtension() {
     }
   })
 
-  // Model selector popup handlers
-  modelSelectorBtn.addEventListener("click", () => {
-    modelSelectorOverlay.classList.remove("hidden")
-  })
+  // Model selector popup handlers (secondary handler)
+  // This handler is replaced by the primary handler above that includes tab switching
 
 
   closeModelSelector.addEventListener("click", async () => {
