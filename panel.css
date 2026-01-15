@@ -1712,6 +1712,7 @@ select,
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
   box-sizing: border-box;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px -2px 4px;
 }
 
 .chat-section.collapsed {
