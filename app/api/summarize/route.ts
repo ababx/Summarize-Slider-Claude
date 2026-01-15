@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     const getMaxTokens = (complexity: string) => {
       switch (complexity) {
         case "eli5":
-          return 1200   // Short but complete summaries
+          return 1800   // Increased to prevent mid-sentence cutoffs
         case "standard":
           return 2500   // Comprehensive bullet-point summaries
         case "phd":
