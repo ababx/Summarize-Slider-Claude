@@ -2779,6 +2779,70 @@ Please respond naturally as a helpful assistant.`
         updateExpandButtonArrows()
       }
     })
+    
+    // Add click handlers for expanding chat to maximum height
+    initializeExpandClickHandlers()
+  }
+  
+  // Initialize click-to-expand handlers for resize handle and chat messages
+  function initializeExpandClickHandlers() {
+    if (!resizeHandle || !chatSection || !chatMessages) return
+    
+    let mouseDownTime = 0
+    let wasDragging = false
+    
+    // Track mousedown time to distinguish clicks from drags
+    resizeHandle.addEventListener('mousedown', () => {
+      mouseDownTime = Date.now()
+      wasDragging = false
+    })
+    
+    // Track if dragging occurred
+    document.addEventListener('mousemove', () => {
+      if (mouseDownTime > 0 && Date.now() - mouseDownTime > 100) {
+        wasDragging = true
+      }
+    })
+    
+    // Reset tracking on mouseup
+    document.addEventListener('mouseup', () => {
+      mouseDownTime = 0
+      setTimeout(() => { wasDragging = false }, 50) // Small delay to let click event fire
+    })
+    
+    // Click on resize handle bar (but not expand button) to expand to maximum
+    resizeHandle.addEventListener('click', (e) => {
+      // Don't trigger if clicking on the expand button
+      if (e.target.closest('.chat-expand-btn')) {
+        return
+      }
+      
+      // Don't trigger if this was a drag operation
+      if (wasDragging || resizeHandle.classList.contains('dragging')) {
+        return
+      }
+      
+      console.log('🖱️ Resize handle clicked - expanding to maximum')
+      setChatHeight(CHAT_SIZES.MAXIMUM)
+      updateExpandButtonArrows()
+    })
+    
+    // Click on chat messages area to expand to maximum
+    chatMessages.addEventListener('click', (e) => {
+      // Don't trigger if clicking on interactive elements or if already at max
+      const currentHeight = getCurrentChatHeight()
+      const maxSize = CHAT_SIZES.MAXIMUM
+      const maxThreshold = maxSize - 10
+      
+      // Skip if already at maximum height
+      if (currentHeight >= maxThreshold) {
+        return
+      }
+      
+      console.log('🖱️ Chat messages clicked - expanding to maximum')
+      setChatHeight(CHAT_SIZES.MAXIMUM)
+      updateExpandButtonArrows()
+    })
   }
 }
 
