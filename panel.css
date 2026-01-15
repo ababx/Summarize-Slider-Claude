@@ -1768,11 +1768,11 @@ select,
 }
 
 .chat-message-content {
-  max-width: 80%;
+  max-width: 98%;
   padding: 12px 16px;
   border-radius: 16px;
   font-family: 'Crimson Text', serif;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.5;
   border: 1px solid rgba(31, 30, 29, 0.08);
 }
