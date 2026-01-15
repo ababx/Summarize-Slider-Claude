@@ -2712,11 +2712,11 @@ Please respond naturally as a helpful assistant.`
       // Allow smooth resizing with full range from min to max
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
       
-      // Use setChatHeight to handle height, CSS classes, and storage
-      setChatHeight(newHeight)
-      
-      // Update expand button arrows to reflect new state
-      updateExpandButtonArrows()
+      // Direct height setting during drag for smoother performance
+      // Skip CSS class updates and arrow updates during drag for smoothness
+      if (chatSection) {
+        chatSection.style.setProperty('height', newHeight + 'px', 'important')
+      }
       
       e.preventDefault()
     })
@@ -2729,8 +2729,12 @@ Please respond naturally as a helpful assistant.`
         document.body.style.cursor = ''
         document.body.style.userSelect = ''
         
-        // Final arrow update after resize is complete
+        // Update CSS classes and arrows after resize is complete
+        const finalHeight = getCurrentChatHeight()
+        setChatHeight(finalHeight) // This will update CSS classes properly
         updateExpandButtonArrows()
+        
+        console.log('🏁 Resize completed at height:', finalHeight)
       }
     })
     
@@ -2761,11 +2765,10 @@ Please respond naturally as a helpful assistant.`
       // Allow smooth resizing with full range from min to max
       const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY))
       
-      // Use setChatHeight to handle height, CSS classes, and storage
-      setChatHeight(newHeight)
-      
-      // Update expand button arrows to reflect new state
-      updateExpandButtonArrows()
+      // Direct height setting during touch drag for smoother performance
+      if (chatSection) {
+        chatSection.style.setProperty('height', newHeight + 'px', 'important')
+      }
       
       e.preventDefault()
     })
@@ -2775,8 +2778,12 @@ Please respond naturally as a helpful assistant.`
         isResizing = false
         resizeHandle.classList.remove('dragging')
         
-        // Final arrow update after resize is complete
+        // Update CSS classes and arrows after resize is complete
+        const finalHeight = getCurrentChatHeight()
+        setChatHeight(finalHeight) // This will update CSS classes properly
         updateExpandButtonArrows()
+        
+        console.log('🏁 Touch resize completed at height:', finalHeight)
       }
     })
     
@@ -2788,26 +2795,38 @@ Please respond naturally as a helpful assistant.`
   function initializeExpandClickHandlers() {
     if (!resizeHandle || !chatSection || !chatMessages) return
     
-    let mouseDownTime = 0
-    let wasDragging = false
+    let clickStartTime = 0
+    let clickStartY = 0
+    let wasDragOperation = false
     
-    // Track mousedown time to distinguish clicks from drags
-    resizeHandle.addEventListener('mousedown', () => {
-      mouseDownTime = Date.now()
-      wasDragging = false
+    // Track click start for resize handle
+    resizeHandle.addEventListener('mousedown', (e) => {
+      // Skip if clicking expand button
+      if (e.target.closest('.chat-expand-btn')) return
+      
+      clickStartTime = Date.now()
+      clickStartY = e.clientY
+      wasDragOperation = false
     })
     
-    // Track if dragging occurred
-    document.addEventListener('mousemove', () => {
-      if (mouseDownTime > 0 && Date.now() - mouseDownTime > 100) {
-        wasDragging = true
+    // Track significant mouse movement to detect drags
+    document.addEventListener('mousemove', (e) => {
+      if (clickStartTime > 0) {
+        const timeDiff = Date.now() - clickStartTime
+        const movementDiff = Math.abs(e.clientY - clickStartY)
+        
+        // Consider it a drag if mouse moved more than 5px or held for more than 200ms
+        if (movementDiff > 5 || timeDiff > 200) {
+          wasDragOperation = true
+        }
       }
     })
     
     // Reset tracking on mouseup
     document.addEventListener('mouseup', () => {
-      mouseDownTime = 0
-      setTimeout(() => { wasDragging = false }, 50) // Small delay to let click event fire
+      clickStartTime = 0
+      // Reset drag flag after a short delay to allow click event to fire
+      setTimeout(() => { wasDragOperation = false }, 100)
     })
     
     // Click on resize handle bar (but not expand button) to expand to maximum
@@ -2818,7 +2837,8 @@ Please respond naturally as a helpful assistant.`
       }
       
       // Don't trigger if this was a drag operation
-      if (wasDragging || resizeHandle.classList.contains('dragging')) {
+      if (wasDragOperation) {
+        console.log('🚫 Resize handle click ignored - was drag operation')
         return
       }
       
